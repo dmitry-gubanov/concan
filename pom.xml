@@ -5,7 +5,7 @@
 
     <groupId>me.dmitrygubanov40</groupId>
     <artifactId>concan</artifactId>
-    <version>0.0.1-0</version>
+    <version>0.0.1-1</version>
 
     <name>Console Canvas</name>
     <!-- FIXME change it to the project's website -->
@@ -40,6 +40,14 @@
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.4.2</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addClasspath>true</addClasspath>
+                                <mainClass>me.dmitrygubanov40.app.App</mainClass>
+                            </manifest>
+                        </archive>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
