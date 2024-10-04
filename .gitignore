@@ -35,3 +35,7 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+
+# Concan test application execution
+# (main)
+src/main/java/me/dmitrygubanov40/app/
