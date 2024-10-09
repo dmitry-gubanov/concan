@@ -42,4 +42,12 @@ abstract class BufferString
      */
     abstract public void append(final String newsChars);
     
+    /**
+     * @param start char position of new (sub-)string
+     * @param end char position of new (sub-)string
+     * @return new string which was a part of the buffer
+     */
+    abstract public String substring(final int start, final int end);
+    abstract public String substring(final int start);
+    
 }

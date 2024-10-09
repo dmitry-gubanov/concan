@@ -55,4 +55,24 @@ class OutputBufferString extends BufferString
         else                        this.bufferFast.append(newsChars);
     }
     
+    @Override
+    public String substring(final int start, final int end) {
+        String stringResult;
+        //
+        if ( this.isSafeAsync() )   stringResult = this.bufferSafe.substring(start, end);
+        else                        stringResult = this.bufferFast.substring(start, end);
+        //
+        return stringResult;
+    }
+    
+    @Override
+    public String substring(final int start) {
+        String stringResult;
+        //
+        if ( this.isSafeAsync() )   stringResult = this.bufferSafe.substring(start);
+        else                        stringResult = this.bufferFast.substring(start);
+        //
+        return stringResult;
+    }
+    
 }
