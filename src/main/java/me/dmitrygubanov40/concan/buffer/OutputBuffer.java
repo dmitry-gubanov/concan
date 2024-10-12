@@ -277,6 +277,14 @@ public class OutputBuffer {
         this.buffer.append(newCharsToBufferOverSize.toString());
     }
     
+    @Override
+    public String toString() {
+        String returnString = "size: " + this.bufferSize + ", multithread: " + this.buffer.isSafeAsync() + ", "
+                                + "autoflush: " + this.autoFlush + ", strict size: " + this.strictSizeControl;
+        //
+        return returnString;
+    }
+    
 
     
 }
