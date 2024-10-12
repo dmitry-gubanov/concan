@@ -62,11 +62,12 @@ public class OutputBuffer {
             throws IllegalArgumentException {
         if ( initSize < MIN_BUFFER_SIZE || initSize > MAX_BUFFER_SIZE ) {
             String excMsg = "Output buffer inappropriate size: " + initSize + "."
-                            + " Must be in range: " + MIN_BUFFER_SIZE + "..." + MAX_BUFFER_SIZE;
+                            + " Must be in range: " + MIN_BUFFER_SIZE + " ... " + MAX_BUFFER_SIZE;
             throw new IllegalArgumentException(excMsg);
         }
         //
         this.bufferSize = initSize;
+        //
         this.initBuffer(isSafeAsync);
         this.setAutoFlush(autoFlushMode);
         this.setStrictSizeControlMode(strictSizeControlMode);
@@ -139,7 +140,7 @@ public class OutputBuffer {
     /**
      * @return whether our buffer is full (via its limit), or there is more space
      */
-    private boolean isFull() {
+    public boolean isFull() {
         boolean result = (this.getBufferLength() > this.bufferSize);
         //
         return result;
