@@ -37,7 +37,7 @@ public class Benchmark
     
     
     
-    public Benchmark(Benchmarkable benchObj) {
+    public Benchmark(final Benchmarkable benchObj) {
         if ( null == benchObj ) {
             String excMsg = "[Benchmark] failed. The 'benchmarkable'-object is empty";
             throw new IllegalArgumentException(excMsg);
@@ -129,7 +129,7 @@ public class Benchmark
      * @param msMaxTime how long all the benchmark can be executed (all iterations)
      * @throws IllegalArgumentException in case of incorrect time maximum
      */
-    public final void setMaxBenchTime(long msMaxTime) throws IllegalArgumentException {
+    public final void setMaxBenchTime(final long msMaxTime) throws IllegalArgumentException {
         if ( msMaxTime <= 0 ) {
             String excMsg = "[Benchmark] failed. Incorrect max execution time given: '" + msMaxTime + "'";
             throw new IllegalArgumentException(excMsg);
@@ -199,20 +199,23 @@ public class Benchmark
             i++;
             startTimeStep = System.nanoTime();
             ////////////////////////////////////
-            try {
-                if ( this.isByMethod ) {
-                    // created to execute some custom method
+            if ( this.isByMethod ) {
+                // created to execute some custom method
+                try {
+                    //
                     highloadMethod.invoke(this.obj, this.params);
-                } else {
-                    // benchmark method was prepared
-                    this.theBenchmarkableObj.doBecnhmark();
+                    //
+                } catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException ex ) {
+                    System.out.println("\n\n[Benchmark] failed. '" + this.methodName + "'-method execution issues.");
+                    System.out.println("Context: " + ex.getMessage());
+                    ex.printStackTrace(System.out);
+                    //
+                    return 0.0;
+                    //
                 }
-            } catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException ex ) {
-                System.out.println("\n\n[Benchmark] failed. '" + this.methodName + "'-method execution issues.");
-                System.out.println("Context: " + ex.getMessage());
-                ex.printStackTrace(System.out);
+            } else {
                 //
-                return 0.0;
+                this.theBenchmarkableObj.doBecnhmark();
                 //
             }
             ////////////////////////////////////
@@ -238,6 +241,7 @@ public class Benchmark
                                 + " (" + i + " iterations)");
         //
         return benchmarkResult;
+        //
     }
     public double runHighload() {
         return this.runHighload(1);
