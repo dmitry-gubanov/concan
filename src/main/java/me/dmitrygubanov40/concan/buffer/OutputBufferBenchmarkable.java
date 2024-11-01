@@ -26,7 +26,7 @@ public class OutputBufferBenchmarkable extends OutputBuffer implements Benchmark
      * What we are going to measure with 'Benchmarkable'.
      */
     @Override
-    public void doBecnhmark() {
+    public void doBenchmark() {
         final int minStrLength = 0;
         final int maxStrLength = 80;
         //
