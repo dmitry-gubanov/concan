@@ -11,7 +11,7 @@ public interface Benchmarkable {
     /**
      * Will measure execution time of this method.
      */
-    public void doBecnhmark();
+    public void doBenchmark();
     
     
     

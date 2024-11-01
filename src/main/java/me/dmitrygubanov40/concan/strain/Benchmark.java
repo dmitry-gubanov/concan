@@ -215,7 +215,7 @@ public class Benchmark
                 }
             } else {
                 //
-                this.theBenchmarkableObj.doBecnhmark();
+                this.theBenchmarkableObj.doBenchmark();
                 //
             }
             ////////////////////////////////////
