@@ -37,7 +37,12 @@ public class Benchmark
     
     
     
-    public Benchmark(final Benchmarkable benchObj) {
+    /**
+     * 'Benchmarkable' initialization via special object (build-in interface support).
+     * @param benchObj 'doBenchmark'-method of this object will be under high load
+     * @throws IllegalArgumentException when null-object is given to init
+     */
+    public Benchmark(final Benchmarkable benchObj) throws IllegalArgumentException {
         if ( null == benchObj ) {
             String excMsg = "[Benchmark] failed. The 'benchmarkable'-object is empty";
             throw new IllegalArgumentException(excMsg);
@@ -113,9 +118,11 @@ public class Benchmark
         //
         try {
             this.highloadMethod = this.getMethodByName();
+            //
             if ( null == this.obj && !Modifier.isStatic(this.highloadMethod.getModifiers()) ) {
                 throw new NoSuchMethodException();
             }
+            //
         } catch ( NoSuchMethodException | SecurityException ex ) {
             System.out.println("\n\n[Benchmark] failed. There is no object's '" + this.methodName + "'-method.");
             System.out.println("Context: " + ex.getMessage());
@@ -142,6 +149,7 @@ public class Benchmark
     
     /**
      * @return the method to be executed in benchmark tests
+     * @throws NoSuchMethodException, SecurityException when method was not found
      */
     private Method getMethodByName() throws NoSuchMethodException, SecurityException {
         Method methodResult = null;
