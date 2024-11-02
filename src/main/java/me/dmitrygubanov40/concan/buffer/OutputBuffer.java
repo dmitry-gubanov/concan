@@ -42,6 +42,7 @@ public class OutputBuffer {
     
     // Make auto-output when buffer is full, or generate an exception?
     private boolean autoFlush;
+    
     // Whether it is possible to get over the buffer size limit
     // for appending purposes?
     private boolean strictSizeControl;
@@ -127,6 +128,8 @@ public class OutputBuffer {
         return this.buffer.length();
     }
     
+    
+    
     /**
      * Print current state of the buffer to console.
      * Has the exact mechanism to draw to the console.
@@ -136,6 +139,18 @@ public class OutputBuffer {
         System.out.print(this.buffer.toString());
         //
     }
+    
+    /**
+     * Print the part of buffer (when we slice it).
+     * @param slice part of buffer to be shown
+     */
+    private void outputSlice(final String slice) {
+        //
+        System.out.print(slice);
+        //
+    }
+    
+    
     
     /**
      * @return whether our buffer is full (via its limit), or there is more space
@@ -166,15 +181,65 @@ public class OutputBuffer {
         this.setAutoFlush(true);
     }
     
+    
+    
     /**
      * Output to console all the buffer, then clear the buffer.
-     * Do not operate with an empty buffer.
+     * Do not work with an empty buffer.
      */
     public void flush() {
         if ( this.getBufferLength() <= 0 ) return;
         //
         this.output();
         this.clearBuffer();
+    }
+    
+    
+    /**
+     * Get slice from 'startSliceIndex' with size of 'sliceSize', show in console,
+     * and then remove the slice from the buffer.
+     * Do not work with an empty buffer.
+     * If buffer is less or equal than 'sliceSize' (and  'startSliceIndex' is zero), we will get the 'flush'-method.
+     * @param sliceSize number of chars in buffer's slice (string) to cut
+     * @param startSliceIndex first character index of the slice
+     */
+    public void sliceOut(final int sliceSize, final int startSliceIndex) throws IllegalArgumentException {
+        if ( sliceSize <= 0 ) {
+            String excMsg = "Cannot slice-out buffer with the slice length: '" + sliceSize + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        if ( startSliceIndex < 0 ) {
+            String excMsg = "Cannot slice-out buffer with the start char at index: '" + startSliceIndex + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        int buffLength = this.getBufferLength();
+        final int endSliceIndex = startSliceIndex + sliceSize;
+        //
+        // we must have buffer:
+        if ( buffLength <= 0 ) return;
+        //
+        // the buffer must have the tail we want to slice:
+        if ( buffLength < endSliceIndex ) return;
+        // 
+        // with this 'slice' it will be identical to 'flush':
+        if ( 0 == startSliceIndex && buffLength <= sliceSize ) {
+            this.flush();
+            return;
+        }
+        //
+        // need to get the slice from buffer
+        String slice = this.buffer.substring(startSliceIndex, endSliceIndex);
+        // show
+        this.outputSlice(slice);
+        // removed from the buffer
+        this.buffer.delete(startSliceIndex, endSliceIndex);
+    }
+    public void sliceOut(final int sliceSize) throws IllegalArgumentException {
+        this.sliceOut(sliceSize, 0);
+    }
+    public void sliceOut() {
+        this.sliceOut(1);
     }
     
     

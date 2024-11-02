@@ -50,4 +50,13 @@ abstract class BufferString
     abstract public String substring(final int start, final int end);
     abstract public String substring(final int start);
     
+    /**
+     * Erase this part of string.
+     * @param start delete 'from'
+     * @param end delete 'until'
+     */
+    abstract public void delete(final int start, final int end);
+    
+    
+    
 }

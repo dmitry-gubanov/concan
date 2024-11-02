@@ -75,4 +75,12 @@ class OutputBufferString extends BufferString
         return stringResult;
     }
     
+    @Override
+    public void delete(final int start, final int end) {
+        if ( this.isSafeAsync() )   this.bufferSafe.delete(start, end);
+        else                        this.bufferFast.delete(start, end);
+    }
+    
+    
+    
 }
