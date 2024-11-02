@@ -55,6 +55,7 @@ public class OutputBuffer {
      * @param isSafeAsync created for many threads(or for only one thread)?
      * @param autoFlushMode output automatically
      * @param strictSizeControlMode disallow to get over buffer size limit at the moment of appending
+     * @throws IllegalArgumentException with incorrect buffer size
      */
     public OutputBuffer(final int initSize,
                         final boolean isSafeAsync,
@@ -202,6 +203,7 @@ public class OutputBuffer {
      * If buffer is less or equal than 'sliceSize' (and  'startSliceIndex' is zero), we will get the 'flush'-method.
      * @param sliceSize number of chars in buffer's slice (string) to cut
      * @param startSliceIndex first character index of the slice
+     * @throws IllegalArgumentException sliceSize > 0, startSliceIndex >= 0
      */
     public void sliceOut(final int sliceSize, final int startSliceIndex) throws IllegalArgumentException {
         if ( sliceSize <= 0 ) {
