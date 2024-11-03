@@ -260,6 +260,19 @@ public class OutputBuffer {
     
     
     /**
+     * Checks whether with the 'newCharsToBuffer' we will exceed the buffer size.
+     * @param newCharsToBuffer string we want to add to the buffer
+     * @return true when we won't overstep buffer's size
+     */
+    private boolean isUnderBufferSizeLimit(final String newCharsToBuffer) {
+        boolean isUnderLimitRes = (this.getBufferLength() + newCharsToBuffer.length()) <= this.bufferSize;
+        //
+        return isUnderLimitRes;
+    }
+    
+    
+    
+    /**
      * Need a string not more than LENGTH_TO_SHOW,
      * and with <...>-marker if it was cut.
      * @param str
@@ -302,12 +315,11 @@ public class OutputBuffer {
         if ( newCharsToBuffer.length() <= 0 ) return;
         //
         // current state of buffer even with new chars is less buffer's size
-        boolean isUnderBuffSize = (this.getBufferLength() + newCharsToBuffer.length()) <= this.bufferSize;
-        if ( isUnderBuffSize ) {
+        if ( this.isUnderBufferSizeLimit(newCharsToBuffer) ) {
             this.buffer.append(newCharsToBuffer);
             return;
         }
-        // Here we have a text which will exceed the buffer size.
+        // Here we have the text which will exceed the buffer size.
         //
         if ( !this.autoFlush ) {
             // No way without auto mode (user must flush themselves).
@@ -342,6 +354,51 @@ public class OutputBuffer {
         }
         // now we have a piece less then the size. Add it.
         this.buffer.append(newCharsToBufferOverSize.toString());
+    }
+    
+    
+    
+    /**
+     * Some string must be added to buffer simultaneously, as-is
+     * (all 'wholeCharsToBuffer' will be outputted at one moment).
+     * If new chars with current buffer are still less than buffer size limit - just add to buffer.
+     * Don't work with an empty string.
+     * @param wholeCharsToBuffer string to add to the buffer which can not be separated in any way
+     * @throws StringIndexOutOfBoundsException if whole-string is too long and autoflush is off 
+     */
+    public void addWhole(final String wholeCharsToBuffer) throws StringIndexOutOfBoundsException {
+        if ( wholeCharsToBuffer.length() <= 0 ) return;
+        //
+        // whole-string must be less than the buffer size
+        if ( wholeCharsToBuffer.length() > this.bufferSize ) {
+            String excMsg = "Whole string to add to the buffer at once is over of its boundaries";
+            throw new StringIndexOutOfBoundsException(excMsg);
+        }
+        //
+        // have enough space - 'wholeCharsToBuffer' will be added in whole
+        if ( this.isUnderBufferSizeLimit(wholeCharsToBuffer) ) {
+            this.add(wholeCharsToBuffer);
+            return;
+        }
+        // here and next 'wholeCharsToBuffer' will exceed the buffer
+        //
+        if ( !this.autoFlush ) {
+            // We can do nothing without autoflush-mode (user must work himself).
+            String excMsg = this.getAddExceptionMsg(wholeCharsToBuffer);
+            throw new StringIndexOutOfBoundsException(excMsg);
+        }
+        //
+        // we are allowed to overstep the limit for a step
+        if ( !this.strictSizeControl ) {
+            this.buffer.append(wholeCharsToBuffer);
+            this.flush();
+            return;
+        }
+        //
+        // Now, we are in strict zone.
+        // Make the buffer empty, then add the whole string
+        this.flush();
+        this.buffer.append(wholeCharsToBuffer);
     }
     
     
