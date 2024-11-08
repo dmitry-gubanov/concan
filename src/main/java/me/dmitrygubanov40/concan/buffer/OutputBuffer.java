@@ -154,7 +154,7 @@ public class OutputBuffer {
     
     
     /**
-     * @return whether our buffer is full (via its limit), or there is more space
+     * @return whether our buffer is full (over its limit), or there is more space
      */
     public boolean isFull() {
         boolean result = (this.getBufferLength() > this.bufferSize);
