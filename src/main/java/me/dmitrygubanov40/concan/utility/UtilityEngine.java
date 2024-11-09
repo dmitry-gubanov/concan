@@ -20,14 +20,28 @@ class UtilityEngine
     private final static String ESC_CMD_SEPARATOR;
     private final static String ESC_CMD_PARAM;
     
+    // ASCII-codes table
+    private final static HashMap<String, Character> charAsciiCodes;
+    
+    
     static {
         ESC_CMD_SEPARATOR = "[";
         ESC_CMD_PARAM = "#";
+        //
+        // ASCII-codes table initialization:
+        charAsciiCodes = new HashMap<>();
+        // General ASCII codes:
+        charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
+        charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
+        charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
+        charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
+        charAsciiCodes.put("VT",  (char) 0x0B);// vertical TAB (new line, same horizontal cursor position)
+        charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
+        charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
+        charAsciiCodes.put("ESC", (char) 0x1B);// escape character for escape-sequence commands
+        charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
     }
     
-    
-    // ASCII-codes table
-    private HashMap<String, Character> charAsciiCodes;
     
     // Esc-commands table (Esc-sequences)
     private HashMap<String, String> escCommands;
@@ -44,7 +58,6 @@ class UtilityEngine
      * Need it for final class initialization.
      */
     protected void initHashTables() {
-        this.initCharAsciiCodes();
         this.initEscCommands();
     }
     
@@ -55,25 +68,6 @@ class UtilityEngine
      */
     public boolean isBuffering() {
         return (null != this.buffer);
-    }
-    
-    
-    
-    /**
-     * To fill the ASCII-codes table.
-     */
-    private void initCharAsciiCodes() {
-        this.charAsciiCodes = new HashMap<>();
-        // General ASCII codes:
-        this.charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
-        this.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
-        this.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
-        this.charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
-        this.charAsciiCodes.put("VT",  (char) 0x0B);// vertical TAB (new line, same horizontal cursor position)
-        this.charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
-        this.charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
-        this.charAsciiCodes.put("ESC", (char) 0x1B);// escape character for escape-sequence commands
-        this.charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
     }
     
     
@@ -149,15 +143,15 @@ class UtilityEngine
      * @return ASCII character as String to use in commands
      * @throws IllegalArgumentException if there is no such ASCII code
      */
-    protected String getStrCharByName(final String charName) throws IllegalArgumentException {
-        if ( !this.charAsciiCodes.containsKey(charName) ) {
-            Set<String> names = this.charAsciiCodes.keySet();
+    protected static String getStrCharByName(final String charName) throws IllegalArgumentException {
+        if ( !UtilityEngine.charAsciiCodes.containsKey(charName) ) {
+            Set<String> names = UtilityEngine.charAsciiCodes.keySet();
             String excMsg = "There is no '" + charName + "'-char in ASCII-codes table. "
                                + "Available chars: " + names;
             throw new IllegalArgumentException(excMsg);
         }
         //
-        Character controlChar = this.charAsciiCodes.get(charName);
+        Character controlChar = UtilityEngine.charAsciiCodes.get(charName);
         //
         return controlChar.toString();
     }

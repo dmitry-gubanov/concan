@@ -10,6 +10,26 @@ package me.dmitrygubanov40.concan.utility;
 class UtilityAscii extends UtilityEngine
 {
     
+    // block of static available ASCII shortcuts
+    // (look for 'UtilityEngine::charAsciiCodes')
+    public static final String CR;
+    public static final String BS;
+    public static final String LF;
+    public static final String HT;
+    public static final String VT;
+    public static final String ESC;
+    
+    
+    static {
+        CR  = UtilityEngine.getStrCharByName("CR");
+        BS  = UtilityEngine.getStrCharByName("BS");
+        LF  = UtilityEngine.getStrCharByName("LF");
+        HT  = UtilityEngine.getStrCharByName("HT");
+        VT  = UtilityEngine.getStrCharByName("VT");
+        ESC = UtilityEngine.getStrCharByName("ESC");
+    }
+    
+    
     /**
      * "To the beginning of the line"
      * Send "carriage-return" command
@@ -17,9 +37,6 @@ class UtilityAscii extends UtilityEngine
      */
     public void sendCR() {
         this.sendAsciiChar("CR", 1);
-    }
-    public String getCR() {
-        return this.getStrCharByName("CR");
     }
     
     /**
@@ -33,9 +50,6 @@ class UtilityAscii extends UtilityEngine
     public void sendBS() {
         this.sendBS(1);
     }
-    public String getBS() {
-        return this.getStrCharByName("BS");
-    }
     
     /**
      * "New line"
@@ -47,9 +61,6 @@ class UtilityAscii extends UtilityEngine
     }
     public void sendLF() {
         this.sendLF(1);
-    }
-    public String getLF() {
-        return this.getStrCharByName("LF");
     }
     
     /**
@@ -64,9 +75,6 @@ class UtilityAscii extends UtilityEngine
     public void sendHT() {
         this.sendHT(1);
     }
-    public String getHT() {
-        return this.getStrCharByName("HT");
-    }
     
     /**
      * "Vertical tabulation"
@@ -79,9 +87,6 @@ class UtilityAscii extends UtilityEngine
     public void sendVT() {
         this.sendVT(1);
     }
-    public String getVT() {
-        return this.getStrCharByName("VT");
-    }
     
     /**
      * "Escape character"
@@ -89,9 +94,6 @@ class UtilityAscii extends UtilityEngine
      */
     public void sendESC() {
         this.sendAsciiChar("ESC", 1);
-    }
-    public String getESC() {
-        return this.getStrCharByName("ESC");
     }
     
     
