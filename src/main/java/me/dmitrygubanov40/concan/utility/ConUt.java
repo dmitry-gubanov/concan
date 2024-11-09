@@ -9,7 +9,7 @@ import me.dmitrygubanov40.concan.buffer.OutputBuffer;
  * It includes the base engine and all premade covers with extra methods.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class ConsoleUtility extends UtilityEscCommands
+public class ConUt extends UtilityEscCommands
 {
     
     ////////////////////
@@ -18,7 +18,7 @@ public class ConsoleUtility extends UtilityEscCommands
      * Default (empty) constructor for direct console output.
      * Operating with standard 'print' (see 'output'-method), or do not need at all.
      */
-    public ConsoleUtility() {
+    public ConUt() {
         this.buffer = null;
         //
         this.initHashTables();
@@ -29,7 +29,7 @@ public class ConsoleUtility extends UtilityEscCommands
      * @param initBuffer buffer the utility will work with
      * @throws NullPointerException when there is no real buffer to use
      */
-    public ConsoleUtility(final OutputBuffer initBuffer) throws NullPointerException {
+    public ConUt(final OutputBuffer initBuffer) throws NullPointerException {
         //
         if ( null == initBuffer ) {
             String excMsg = "Cannot initialize buffer for Console Utility";
