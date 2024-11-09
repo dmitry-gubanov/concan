@@ -10,7 +10,7 @@ import java.awt.Color;
  * Also has greyscale palette.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public enum ConsoleColor
+public enum ConCol
 {
     
     // 16 system colors:
@@ -301,7 +301,7 @@ public enum ConsoleColor
     
     // ConsoleColor-array with grey spectrum from the darkest grey to the lightest one
     // includes black and white colors as part of spectrum
-    private static final ConsoleColor[] GREYSCALE;
+    private static final ConCol[] GREYSCALE;
     
     static {
         LIMIT_4B = 16;
@@ -310,7 +310,7 @@ public enum ConsoleColor
         BACKGROUND_SHIFT_4B = 10;
         //
         // 24 + 2 = 26 colors of grey scale
-        GREYSCALE = new ConsoleColor[] {
+        GREYSCALE = new ConCol[] {
                         BLACK,
                         GREYSCALE1,  GREYSCALE2,  GREYSCALE3,  GREYSCALE4,  GREYSCALE5,  GREYSCALE6,
                         GREYSCALE7,  GREYSCALE8,  GREYSCALE9,  GREYSCALE10, GREYSCALE11, GREYSCALE12,
@@ -331,7 +331,7 @@ public enum ConsoleColor
      * @param initName text name of color
      * @param initTrueColor real color system (java.awt.Color)
      */
-    ConsoleColor(final int initColor, final String initName, final Color initTrueColor) {
+    ConCol(final int initColor, final String initName, final Color initTrueColor) {
         this.name = initName;
         this.colorCode = initColor;
         this.trueColor = initTrueColor;
@@ -362,7 +362,7 @@ public enum ConsoleColor
      * @return 'true' for short system 4-bit color
      */
     private boolean is4bit() {
-        boolean result = (this.colorCode < ConsoleColor.LIMIT_4B);
+        boolean result = (this.colorCode < ConCol.LIMIT_4B);
         return result;
     }
     
@@ -373,7 +373,7 @@ public enum ConsoleColor
     private boolean isGreyScale() {
         boolean result = false;
         //
-        for ( ConsoleColor curColor : ConsoleColor.GREYSCALE ) {
+        for ( ConCol curColor : ConCol.GREYSCALE ) {
             if ( this.trueColor.equals(curColor.getTrueColor()) ) {
                 result = true;
                 break;
@@ -388,15 +388,15 @@ public enum ConsoleColor
      * @param index index of lightness (more index - lighter the color)
      * @return ConsoleColor element of that index of lightness, or black/white color for out-of-boundaries
      */
-    public static ConsoleColor getGreyscaleColor(final int index) {
+    public static ConCol getGreyscaleColor(final int index) {
         if ( index < 0 ) {
-            return ConsoleColor.GREYSCALE[0];
+            return ConCol.GREYSCALE[0];
         }
-        if ( index >= ConsoleColor.GREYSCALE.length ) {
-            return ConsoleColor.GREYSCALE[ ConsoleColor.GREYSCALE.length - 1 ];
+        if ( index >= ConCol.GREYSCALE.length ) {
+            return ConCol.GREYSCALE[ ConCol.GREYSCALE.length - 1 ];
         }
         //
-        return ConsoleColor.GREYSCALE[ index ];
+        return ConCol.GREYSCALE[ index ];
     }
     
     /**
@@ -412,17 +412,17 @@ public enum ConsoleColor
         //
         int consoleColorCodeVGA = this.getColorCode();
         //
-        if ( this.getColorCode() <= (ConsoleColor.LIMIT_4B / 2) ) {
+        if ( this.getColorCode() <= (ConCol.LIMIT_4B / 2) ) {
             // first 8 colors shif
-            consoleColorCodeVGA += ConsoleColor.FIRST_COLORS_SHIFT_4B;
+            consoleColorCodeVGA += ConCol.FIRST_COLORS_SHIFT_4B;
         } else {
             // last 8 colors shift
-            consoleColorCodeVGA += ConsoleColor.LAST_COLORS_SHIFT_4B;
+            consoleColorCodeVGA += ConCol.LAST_COLORS_SHIFT_4B;
         }
         //
         if ( isBackground ) {
             // special background shift
-            consoleColorCodeVGA += ConsoleColor.BACKGROUND_SHIFT_4B;
+            consoleColorCodeVGA += ConCol.BACKGROUND_SHIFT_4B;
         }
         //
         return consoleColorCodeVGA;

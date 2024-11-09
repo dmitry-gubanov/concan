@@ -290,7 +290,7 @@ public class UtilityEscCommands extends UtilityAscii
     public void sendColor(final Color color) {
         this.sendEscCmd("COLOR", color.getRed(), color.getGreen(), color.getBlue());
     }
-    public void sendColor(final ConsoleColor color) {
+    public void sendColor(final ConCol color) {
         this.sendColor(color.getTrueColor());
     }
     /**
@@ -300,7 +300,7 @@ public class UtilityEscCommands extends UtilityAscii
     public void sendBackground(final Color color) {
         this.sendEscCmd("BACKGROUND", color.getRed(), color.getGreen(), color.getBlue());
     }
-    public void sendBackground(final ConsoleColor color) {
+    public void sendBackground(final ConCol color) {
         this.sendBackground(color.getTrueColor());
     }
     
@@ -309,7 +309,7 @@ public class UtilityEscCommands extends UtilityAscii
      * Same as for TrueColor, only argument differs.
      * @param color one of premade 256 colors to install
      */
-    public void sendColor8B(final ConsoleColor color) {
+    public void sendColor8B(final ConCol color) {
         this.sendEscCmd("COLOR_8B", color.getColorCode());
     }
     /**
@@ -317,7 +317,7 @@ public class UtilityEscCommands extends UtilityAscii
      * Same as for TrueColor, only argument differs.
      * @param color one of premade 256 colors to install
      */
-    public void sendBackground8B(final ConsoleColor color) {
+    public void sendBackground8B(final ConCol color) {
         this.sendEscCmd("BACKGROUND_8B", color.getColorCode());
     }
     
@@ -326,14 +326,14 @@ public class UtilityEscCommands extends UtilityAscii
      * @param color one of premade 16 colors to install
      * @throws IllegalArgumentException if color is out of 16 base colors range
      */
-    public void sendColor4B(final ConsoleColor color) {
+    public void sendColor4B(final ConCol color) {
         this.sendEscCmd("COLOR_4B", color.getColorCodeVGA());
     }
     /**
      * Install background color for letters, 4b mode (16 colors).
      * @param color one of premade 16 colors to install
      */
-    public void sendBackground4B(final ConsoleColor color) {
+    public void sendBackground4B(final ConCol color) {
         this.sendEscCmd("BACKGROUND_4B", color.getBackgroundCodeVGA());
     }
     
