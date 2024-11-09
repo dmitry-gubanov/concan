@@ -123,7 +123,7 @@ public class OutputBuffer {
     
     /**
      * Wrapper to get the current size (in characters) of our buffer.
-     * @return length in symbols
+     * @return length in symbols, technical - with invisible letters and commands
      */
     private int getBufferLength() {
         return this.buffer.length();
@@ -154,6 +154,7 @@ public class OutputBuffer {
     
     
     /**
+     * For technical control of buffer state (in case when autoflush may be off).
      * @return whether our buffer is full (over its limit), or there is more space
      */
     public boolean isFull() {

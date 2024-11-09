@@ -65,15 +65,15 @@ class UtilityEngine
     private void initCharAsciiCodes() {
         this.charAsciiCodes = new HashMap<>();
         // General ASCII codes:
-        this.charAsciiCodes.put("BEL", (char) 0x07);// Terminal bell (if supported)
-        this.charAsciiCodes.put("BS",  (char) 0x08);// Backspace
-        this.charAsciiCodes.put("HT",  (char) 0x09);// Horizontal Tab
-        this.charAsciiCodes.put("LF",  (char) 0x0A);// "Linefeed" (new line)
-        this.charAsciiCodes.put("VT",  (char) 0x0B);// Vertical TAB (new line with the same horizontal cursor position)
-        this.charAsciiCodes.put("FF",  (char) 0x0C);// "Formfeed", printers' page breaker (if supported)
-        this.charAsciiCodes.put("CR",  (char) 0x0D);// Carriage return
-        this.charAsciiCodes.put("ESC", (char) 0x1B);// Escape character
-        this.charAsciiCodes.put("DEL", (char) 0x7F);// "Delete" (empty) no-character (if supported)
+        this.charAsciiCodes.put("BEL", (char) 0x07);// '\a', (if supported) terminal bell
+        this.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
+        this.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
+        this.charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
+        this.charAsciiCodes.put("VT",  (char) 0x0B);// '\v', vertical TAB (new line, same horizontal cursor position)
+        this.charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
+        this.charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
+        this.charAsciiCodes.put("ESC", (char) 0x1B);// '\e', escape character
+        this.charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
     }
     
     
@@ -140,9 +140,6 @@ class UtilityEngine
         // (4b regime)
         this.escCommands.put("COLOR_4B",        "#m");  // premade console 16 colors for letters
         this.escCommands.put("BACKGROUND_4B",   "#m");  // premade console 16 colors for background
-/*
-
-*/
     }
     
     
