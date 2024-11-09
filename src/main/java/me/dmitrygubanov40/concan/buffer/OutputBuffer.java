@@ -238,7 +238,7 @@ public class OutputBuffer {
         // removed from the buffer
         this.buffer.delete(startSliceIndex, endSliceIndex);
     }
-    public void sliceOut(final int sliceSize) throws IllegalArgumentException {
+    public void sliceOut(final int sliceSize) {
         this.sliceOut(sliceSize, 0);
     }
     public void sliceOut() {

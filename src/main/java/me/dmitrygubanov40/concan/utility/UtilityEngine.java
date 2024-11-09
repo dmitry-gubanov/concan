@@ -65,14 +65,14 @@ class UtilityEngine
     private void initCharAsciiCodes() {
         this.charAsciiCodes = new HashMap<>();
         // General ASCII codes:
-        this.charAsciiCodes.put("BEL", (char) 0x07);// '\a', (if supported) terminal bell
+        this.charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
         this.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
         this.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
         this.charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
-        this.charAsciiCodes.put("VT",  (char) 0x0B);// '\v', vertical TAB (new line, same horizontal cursor position)
+        this.charAsciiCodes.put("VT",  (char) 0x0B);// vertical TAB (new line, same horizontal cursor position)
         this.charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
         this.charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
-        this.charAsciiCodes.put("ESC", (char) 0x1B);// '\e', escape character
+        this.charAsciiCodes.put("ESC", (char) 0x1B);// escape character for escape-sequence commands
         this.charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
     }
     
