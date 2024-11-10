@@ -20,8 +20,6 @@ public class ConUt extends UtilityEscCommands
      */
     public ConUt() {
         this.buffer = null;
-        //
-        this.initHashTables();
     }
     
     /**
@@ -32,13 +30,11 @@ public class ConUt extends UtilityEscCommands
     public ConUt(final OutputBuffer initBuffer) throws NullPointerException {
         //
         if ( null == initBuffer ) {
-            String excMsg = "Cannot initialize buffer for Console Utility";
+            String excMsg = "Cannot initialize buffer for ConUt (console utility)";
             throw new NullPointerException(excMsg);
         }
         //
         this.buffer = initBuffer;
-        //
-        this.initHashTables();
     }
     
     ////////////////////

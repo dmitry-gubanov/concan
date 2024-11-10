@@ -23,6 +23,9 @@ class UtilityEngine
     // ASCII-codes table
     private final static HashMap<String, Character> charAsciiCodes;
     
+    // Esc-commands table (Esc-sequences)
+    private final static HashMap<String, String> escCommands;
+    
     
     static {
         ESC_CMD_SEPARATOR = "[";
@@ -31,36 +34,19 @@ class UtilityEngine
         // ASCII-codes table initialization:
         charAsciiCodes = new HashMap<>();
         // General ASCII codes:
-        charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
-        charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
-        charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
-        charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
-        charAsciiCodes.put("VT",  (char) 0x0B);// vertical TAB (new line, same horizontal cursor position)
-        charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
-        charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
-        charAsciiCodes.put("ESC", (char) 0x1B);// escape character for escape-sequence commands
-        charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
+        initCharAsciiCodes();
+        //
+        // Escape-commands (sequences) initialization:
+        escCommands = new HashMap<>();
+        initEscCommands();
     }
     
-    
-    // Esc-commands table (Esc-sequences)
-    private HashMap<String, String> escCommands;
     
     // whether to use rapid output of all buffer or output each symbol or command
     protected OutputBuffer buffer;
     
     
     ////////////////////
-    
-    
-    /**
-     * Fill the tables to operate.
-     * Need it for final class initialization.
-     */
-    protected void initHashTables() {
-        this.initEscCommands();
-    }
-    
     
     
     /**
@@ -73,67 +59,78 @@ class UtilityEngine
     
     
     /**
-     * To fill the table with all commands utility can support.
-     * Important: '#' in command means 'i' (or 'j' for the second one) argument.
+     * To fill the ASCII-codes table.
      */
-    private void initEscCommands() {
-        this.escCommands = new HashMap<>();
-        //
-        // List of Esc-commands.
-        //
+    private static void initCharAsciiCodes() {
+        UtilityEngine.charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
+        UtilityEngine.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
+        UtilityEngine.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
+        UtilityEngine.charAsciiCodes.put("LF",  (char) 0x0A);// '\n', "linefeed" (new line)
+        UtilityEngine.charAsciiCodes.put("VT",  (char) 0x0B);// vertical TAB (new line, same horizontal cursor position)
+        UtilityEngine.charAsciiCodes.put("FF",  (char) 0x0C);// '\f', (if supported) "formfeed", printers' page breaker
+        UtilityEngine.charAsciiCodes.put("CR",  (char) 0x0D);// '\r', carriage return
+        UtilityEngine.charAsciiCodes.put("ESC", (char) 0x1B);// escape character for escape-sequence commands
+        UtilityEngine.charAsciiCodes.put("DEL", (char) 0x7F);// (if supported) "delete" (empty) no-character
+    }
+    
+    /**
+     * To fill the table with all commands utility can support.
+     * Important: '#' in command means some argument (1, 2, or 3).
+     */
+    private static void initEscCommands() {
         // Cursor control functions:
-        this.escCommands.put("HOME",        "H");   // move cursor to the home position (0, 0)
-        this.escCommands.put("GOTO",        "#;#H");// move cursor to the position (#1, #2) /Y, X/
-        this.escCommands.put("UP",          "#A");  // move cursor up for # lines (Y) if possible, X is kept
-        this.escCommands.put("DOWN",        "#B");  // move cursor down for # lines (Y) if possible, X is kept
-        this.escCommands.put("RIGHT",       "#C");  // move cursor to the right for # columns (X) if possible, Y is kept
-        this.escCommands.put("LEFT",        "#D");  // move cursor to the left for # columns (X) if possible, Y is kept
-        this.escCommands.put("NEXT",        "#E");  // move cursor to the beginning of next line (X=0, '#'-Y to down)
-        this.escCommands.put("PREVIOUS",    "#F");  // move cursor to the beginning of previous line (X=0, '#'-Y up)
-        this.escCommands.put("COLUMN",      "#G");  // move cursor to the column number '#' if possible, Y (line) is kept
-        this.escCommands.put("CURSOR_ON",   "?25h");// show console cursor
-        this.escCommands.put("CURSOR_OFF",  "?25l");// hide console cursor
+        UtilityEngine.escCommands.put("HOME",        "H");      // move cursor to the home position (0, 0)
+        UtilityEngine.escCommands.put("GOTO",        "#;#H");   // move cursor to the position (#1, #2) /Y, X/
+        UtilityEngine.escCommands.put("UP",          "#A");     // move cursor up for # lines (Y) if possible, X is kept
+        UtilityEngine.escCommands.put("DOWN",        "#B");     // move cursor down for # lines (Y) if possible, X is kept
+        UtilityEngine.escCommands.put("RIGHT",       "#C");     // move cursor to the right for # columns (X) if possible, Y is kept
+        UtilityEngine.escCommands.put("LEFT",        "#D");     // move cursor to the left for # columns (X) if possible, Y is kept
+        UtilityEngine.escCommands.put("NEXT",        "#E");     // move cursor to the beginning of next line (X=0, '#'-Y to down)
+        UtilityEngine.escCommands.put("PREVIOUS",    "#F");     // move cursor to the beginning of previous line (X=0, '#'-Y up)
+        UtilityEngine.escCommands.put("COLUMN",      "#G");     // move cursor to the column number '#' if possible, Y (line) is kept
+        UtilityEngine.escCommands.put("CURSOR_ON",   "?25h");   // show console cursor
+        UtilityEngine.escCommands.put("CURSOR_OFF",  "?25l");   // hide console cursor
         //
         // Clear functions:
-        this.escCommands.put("ERASE_ALL_AFTER",     "0J");  // erase from cursor until end of screen, cursor is kept
-        this.escCommands.put("ERASE_ALL_BEFORE",    "1J");  // erase from cursor to beginning of screen, cursor is kept
-        this.escCommands.put("ERASE_ALL",           "2J");  // clear all the console, cursor is kept
-        this.escCommands.put("ERASE_LINE_AFTER",    "0K");  // erase from cursor until end of line, cursor is kept
-        this.escCommands.put("ERASE_LINE_BEFORE",   "1K");  // erase from cursor to beginning of line, cursor is kept
-        this.escCommands.put("ERASE_LINE",          "2K");  // clear all the current line, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_ALL_AFTER",     "0J"); // erase from cursor until end of screen, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_ALL_BEFORE",    "1J"); // erase from cursor to beginning of screen, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_ALL",           "2J"); // clear all the console, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_LINE_AFTER",    "0K"); // erase from cursor until end of line, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_LINE_BEFORE",   "1K"); // erase from cursor to beginning of line, cursor is kept
+        UtilityEngine.escCommands.put("ERASE_LINE",          "2K"); // clear all the current line, cursor is kept
         //
         // Style control functions:
-        this.escCommands.put("RESET",               "0m");  // reset all - both styles and color
+        UtilityEngine.escCommands.put("RESET", "0m");// reset all - both styles and color
         //
-        this.escCommands.put("STYLE_BOLD",          "1m");  // letters are twice bolder
-        this.escCommands.put("STYLE_BOLD_OFF",      "22m"); // bold is off (same for dim-mode)
-        this.escCommands.put("STYLE_DIM",           "2m");  // letters are twice less colorful (if support)
-        this.escCommands.put("STYLE_DIM_OFF",       "22m"); // dim is off (same for bold-mode)
-        this.escCommands.put("STYLE_ITALIC",        "3m");  // letters are semi-curve
-        this.escCommands.put("STYLE_ITALIC_OFF",    "23m"); // italic is off
-        this.escCommands.put("STYLE_UNDERLINE",     "4m");  // all letters (inc. empty) have underline
-        this.escCommands.put("STYLE_UNDERLINE_OFF", "24m"); // underline if off
-        this.escCommands.put("STYLE_BLINK",         "5m");  // letters are blinking (frequency is OS based)
-        this.escCommands.put("STYLE_BLINK_OFF",     "25m"); // blinking is off
-        this.escCommands.put("STYLE_INVERSE",       "7m");  // chars get background color, background - color of chars
-        this.escCommands.put("STYLE_INVERSE_OFF",   "27m"); // inverse if off
-        this.escCommands.put("STYLE_HIDDEN",        "8m");  // chars get background color, are invisible but selectable
-        this.escCommands.put("STYLE_HIDDEN_OFF",    "28m"); // hidden is off
-        this.escCommands.put("STYLE_STRIKE",        "9m");  // vertical medium height line through all the chars
-        this.escCommands.put("STYLE_STRIKE_OFF",    "29m"); // strike is off
+        UtilityEngine.escCommands.put("BOLD",           "1m");  // letters are twice bolder
+        UtilityEngine.escCommands.put("BOLD_OFF",       "22m"); // bold is off (same for dim-mode)
+        UtilityEngine.escCommands.put("DIM",            "2m");  // letters are twice less colorful (if support)
+        UtilityEngine.escCommands.put("DIM_OFF",        "22m"); // dim is off (same for bold-mode)
+        UtilityEngine.escCommands.put("ITALIC",         "3m");  // letters are semi-curve
+        UtilityEngine.escCommands.put("ITALIC_OFF",     "23m"); // italic is off
+        UtilityEngine.escCommands.put("UNDERLINE",      "4m");  // all letters (inc. empty) have underline
+        UtilityEngine.escCommands.put("UNDERLINE_OFF",  "24m"); // underline if off
+        UtilityEngine.escCommands.put("BLINK",          "5m");  // letters are blinking (frequency is OS based)
+        UtilityEngine.escCommands.put("BLINK_OFF",      "25m"); // blinking is off
+        UtilityEngine.escCommands.put("INVERSE",        "7m");  // chars get background color, background - color of chars
+        UtilityEngine.escCommands.put("INVERSE_OFF",    "27m"); // inverse if off
+        UtilityEngine.escCommands.put("HIDDEN",         "8m");  // chars get background color, are invisible but selectable
+        UtilityEngine.escCommands.put("HIDDEN_OFF",     "28m"); // hidden is off
+        UtilityEngine.escCommands.put("STRIKE",         "9m");  // vertical medium height line through all the chars
+        UtilityEngine.escCommands.put("STRIKE_OFF",     "29m"); // strike is off
         //
         // Colors control function:
-        this.escCommands.put("COLOR_DEFAULT",       "39m"); // return default console letters color (style is kept)
-        this.escCommands.put("BACKGROUND_DEFAULT",  "49m"); // return default console background color (style is kept)
+        UtilityEngine.escCommands.put("COLOR_DEFAULT",       "39m");// return default console letters color (style is kept)
+        UtilityEngine.escCommands.put("BACKGROUND_DEFAULT",  "49m");// return default console background color (style is kept)
         // (TrueColor 24b regime)
-        this.escCommands.put("COLOR",           "38;2;#;#;#m"); // (R-index, G-index, B-index)-color for letters
-        this.escCommands.put("BACKGROUND",      "48;2;#;#;#m"); // (R-index, G-index, B-index)-color for background
+        UtilityEngine.escCommands.put("COLOR",           "38;2;#;#;#m");// (R-index, G-index, B-index)-color for letters
+        UtilityEngine.escCommands.put("BACKGROUND",      "48;2;#;#;#m");// (R-index, G-index, B-index)-color for background
         // (8b regime)
-        this.escCommands.put("COLOR_8B",        "38;5;#m"); // premade console 256 colors for letters
-        this.escCommands.put("BACKGROUND_8B",   "48;5;#m"); // premade console 256 colors for background
+        UtilityEngine.escCommands.put("COLOR_8B",        "38;5;#m");// premade console 256 colors for letters
+        UtilityEngine.escCommands.put("BACKGROUND_8B",   "48;5;#m");// premade console 256 colors for background
         // (4b regime)
-        this.escCommands.put("COLOR_4B",        "#m");  // premade console 16 colors for letters
-        this.escCommands.put("BACKGROUND_4B",   "#m");  // premade console 16 colors for background
+        UtilityEngine.escCommands.put("COLOR_4B",        "#m");// premade console 16 colors for letters
+        UtilityEngine.escCommands.put("BACKGROUND_4B",   "#m");// premade console 16 colors for background
     }
     
     
@@ -161,15 +158,15 @@ class UtilityEngine
      * @return command representation (string may be necessary to replace the '#')
      * @throws IllegalArgumentException if there is no such command in the table
      */
-    protected String getStrCmdByName(final String cmdName) throws IllegalArgumentException {
-        if ( !this.escCommands.containsKey(cmdName) ) {
-            Set<String> commands = this.escCommands.keySet();
+    protected static String getStrEscCmdByName(final String cmdName) throws IllegalArgumentException {
+        if ( !UtilityEngine.escCommands.containsKey(cmdName) ) {
+            Set<String> commands = UtilityEngine.escCommands.keySet();
             String excMsg = "There is no '" + cmdName + "'-command in Esc-sequence table. "
                                + "Available commands: " + commands;
             throw new IllegalArgumentException(excMsg);
         }
         //
-        String commandStr = this.escCommands.get(cmdName);
+        String commandStr = UtilityEngine.escCommands.get(cmdName);
         return commandStr;
     }
     
@@ -230,7 +227,7 @@ class UtilityEngine
         }
         //
         for ( int i = 0; i < iterations; i++ ) {
-            String charStr = this.getStrCharByName(charName);
+            String charStr = UtilityEngine.getStrCharByName(charName);
             this.send(charStr);
         }
     }
@@ -238,19 +235,59 @@ class UtilityEngine
     
     
     /**
+     * @param cmd command (sequence) raw macros (like '38;2;#;#;#m').
+     * @return number of hash symbols '#' (UtilityEngine.ESC_CMD_PARAM) in the 'cmd'-string 
+     */
+    private static int getNmbOfEscCmdParams(final String cmd) {
+        int hashCount = cmd.length() - cmd.replace(UtilityEngine.ESC_CMD_PARAM, "").length();
+        //
+        return hashCount;
+    }
+    
+    /**
+     * @param cmd command (sequence) final macros with all arguments replaced (like '38;2;1;2;3m').
+     * @return string full full composition of esc-command
+     */
+    private static String getFullStrEscCmd(String cmd) {
+        // Here is 'magic' like "ESC" + "[" + "2J"
+        String escCmd = UtilityEngine.getStrCharByName("ESC")
+                        + UtilityEngine.ESC_CMD_SEPARATOR
+                        + cmd;
+        //
+        return escCmd;
+    }
+    
+    
+    
+    /**
+     * Connect all the parts of simple (no arguments) command/sequence, checking its parameters.
+     * @param cmdCode base part of a command (like "H" or "2J")
+     * @throws IllegalArgumentException when escape command (sequence) has arguments (is not simple)
+     */
+    protected static String getSimpleEscCmd(final String cmdCode)
+                                    throws IllegalArgumentException {
+        int hashCount = UtilityEngine.getNmbOfEscCmdParams(cmdCode);
+        if ( hashCount > 0 ) {
+            String excMsg = "Command '" + cmdCode + "' is not simple: has " + hashCount + "arguments";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        String cmd = UtilityEngine.getStrEscCmdByName(cmdCode);
+        //
+        return UtilityEngine.getFullStrEscCmd(cmd);
+    }
+    
+    /**
      * Connect all the parts of command/sequence and send it to the buffer/output.
      * @param cmdCode base part of a command (like "H" or "2J")
      * @param params possible extra arguments (to replace '#'-s)
      */
     protected void sendEscCmd(final String cmdCode, final Integer... params) {
-        String cmd = this.getStrCmdByName(cmdCode);
-        if ( !this.checkEscCmdArguments(cmd, params) ) return;// in case parameters are incorrect
+        String cmd = UtilityEngine.getStrEscCmdByName(cmdCode);
+        if ( !this.checkEscCmdArguments(cmd, params) ) return;// in case parameters are incorrect do nothing
         cmd = this.replaceEscCmdArguments(cmd, params);
         //
-        // Here is 'magic' like "ESC" + "[" + "2J"
-        String escCmd = this.getStrCharByName("ESC")
-                        + UtilityEngine.ESC_CMD_SEPARATOR
-                        + cmd;
+        String escCmd = UtilityEngine.getFullStrEscCmd(cmd);
         //
         // all the command (sequence) will be shown at a single moment
         final boolean sendEscCmdInWhole = true;
@@ -261,21 +298,13 @@ class UtilityEngine
      * Are arguments in hash table and the method correct?
      * @param cmd real command string (from 'escCommands'-table)
      * @param params possible extra arguments (for '#'-s)
-     * @return 'true' when arguments correspond each other
-     * @throws IllegalArgumentException when number of '#' in command string don't correspond 'params'
+     * @return 'true' when arguments correspond each other ('#'-hashes and 'params')
      */
-    private boolean checkEscCmdArguments(final String cmd, final Integer... params)
-                        throws IllegalArgumentException {
+    private boolean checkEscCmdArguments(final String cmd, final Integer... params) {
         // count number of '#' in command string
-        int hashCount = cmd.length() - cmd.replace(UtilityEngine.ESC_CMD_PARAM, "").length();
+        int hashCount = UtilityEngine.getNmbOfEscCmdParams(cmd);
         //
-        if ( hashCount != params.length ) {
-            String excMsg = "'" + cmd + "'-command requires " + hashCount + " arguments. "
-                            + "Number of arguments: '" + params.length + "'.";
-            throw new IllegalArgumentException(excMsg);
-        }
-        //
-        return true;
+        return (hashCount == params.length);
     }
     
     /**

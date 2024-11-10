@@ -12,6 +12,77 @@ import java.awt.Color;
 public class UtilityEscCommands extends UtilityAscii
 {
     
+    // List of argumentless (simple) escape commands (sequences):
+    public static final String HOME;
+    public static final String CURSOR_ON;
+    public static final String CURSOR_OFF;
+    //
+    public static final String ERASE_ALL_AFTER;
+    public static final String ERASE_ALL_BEFORE;
+    public static final String ERASE_ALL;
+    public static final String ERASE_LINE_AFTER;
+    public static final String ERASE_LINE_BEFORE;
+    public static final String ERASE_LINE;
+    //
+    public static final String RESET;
+    //
+    public static final String BOLD;
+    public static final String BOLD_OFF;
+    public static final String DIM;
+    public static final String DIM_OFF;
+    public static final String ITALIC;
+    public static final String ITALIC_OFF;
+    public static final String UNDERLINE;
+    public static final String UNDERLINE_OFF;
+    public static final String BLINK;
+    public static final String BLINK_OFF;
+    public static final String INVERSE;
+    public static final String INVERSE_OFF;
+    public static final String HIDDEN;
+    public static final String HIDDEN_OFF;
+    public static final String STRIKE;
+    public static final String STRIKE_OFF;
+    //
+    public static final String COLOR_DEFAULT;
+    public static final String BACKGROUND_DEFAULT;
+    
+    
+    static {
+        HOME        = UtilityEngine.getSimpleEscCmd("HOME");
+        CURSOR_ON   = UtilityEngine.getSimpleEscCmd("CURSOR_ON");
+        CURSOR_OFF  = UtilityEngine.getSimpleEscCmd("CURSOR_OFF");
+        //
+        ERASE_ALL_AFTER     = UtilityEngine.getSimpleEscCmd("ERASE_ALL_AFTER");
+        ERASE_ALL_BEFORE    = UtilityEngine.getSimpleEscCmd("ERASE_ALL_BEFORE");
+        ERASE_ALL           = UtilityEngine.getSimpleEscCmd("ERASE_ALL");
+        ERASE_LINE_AFTER    = UtilityEngine.getSimpleEscCmd("ERASE_LINE_AFTER");
+        ERASE_LINE_BEFORE   = UtilityEngine.getSimpleEscCmd("ERASE_LINE_BEFORE");
+        ERASE_LINE          = UtilityEngine.getSimpleEscCmd("ERASE_LINE");
+        //
+        RESET = UtilityEngine.getSimpleEscCmd("RESET");
+        //
+        BOLD            = UtilityEngine.getSimpleEscCmd("BOLD");
+        BOLD_OFF        = UtilityEngine.getSimpleEscCmd("BOLD_OFF");
+        DIM             = UtilityEngine.getSimpleEscCmd("DIM");
+        DIM_OFF         = UtilityEngine.getSimpleEscCmd("DIM_OFF");
+        ITALIC          = UtilityEngine.getSimpleEscCmd("ITALIC");
+        ITALIC_OFF      = UtilityEngine.getSimpleEscCmd("ITALIC_OFF");
+        UNDERLINE       = UtilityEngine.getSimpleEscCmd("UNDERLINE");
+        UNDERLINE_OFF   = UtilityEngine.getSimpleEscCmd("UNDERLINE_OFF");
+        BLINK           = UtilityEngine.getSimpleEscCmd("BLINK");
+        BLINK_OFF       = UtilityEngine.getSimpleEscCmd("BLINK_OFF");
+        INVERSE         = UtilityEngine.getSimpleEscCmd("INVERSE");
+        INVERSE_OFF     = UtilityEngine.getSimpleEscCmd("INVERSE_OFF");
+        HIDDEN          = UtilityEngine.getSimpleEscCmd("HIDDEN");
+        HIDDEN_OFF      = UtilityEngine.getSimpleEscCmd("HIDDEN_OFF");
+        STRIKE          = UtilityEngine.getSimpleEscCmd("STRIKE");
+        STRIKE_OFF      = UtilityEngine.getSimpleEscCmd("STRIKE_OFF");
+        //
+        COLOR_DEFAULT       = UtilityEngine.getSimpleEscCmd("COLOR_DEFAULT");
+        BACKGROUND_DEFAULT  = UtilityEngine.getSimpleEscCmd("BACKGROUND_DEFAULT");
+    }
+    
+    
     /**
      * Move to (0, 0) point of console.
      */
@@ -191,10 +262,10 @@ public class UtilityEscCommands extends UtilityAscii
      * Off-mode also blocks dim-mode.
      */
     public void sendStyleBold() {
-        this.sendEscCmd("STYLE_BOLD");
+        this.sendEscCmd("BOLD");
     }
     public void sendStyleBoldOff() {
-        this.sendEscCmd("STYLE_BOLD_OFF");
+        this.sendEscCmd("BOLD_OFF");
     }
     
     /**
@@ -202,70 +273,70 @@ public class UtilityEscCommands extends UtilityAscii
      * Off-mode also blocks bold-mode.
      */
     public void sendStyleDim() {
-        this.sendEscCmd("STYLE_DIM");
+        this.sendEscCmd("DIM");
     }
     public void sendStyleDimOff() {
-        this.sendEscCmd("STYLE_DIM_OFF");
+        this.sendEscCmd("DIM_OFF");
     }
     
     /**
      * Set italic mode on/off.
      */
     public void sendStyleItalic() {
-        this.sendEscCmd("STYLE_ITALIC");
+        this.sendEscCmd("ITALIC");
     }
     public void sendStyleItalicOff() {
-        this.sendEscCmd("STYLE_ITALIC_OFF");
+        this.sendEscCmd("ITALIC_OFF");
     }
     
     /**
      * Set underline mode on/off.
      */
     public void sendStyleUnderline() {
-        this.sendEscCmd("STYLE_UNDERLINE");
+        this.sendEscCmd("UNDERLINE");
     }
     public void sendStyleUnderlineOff() {
-        this.sendEscCmd("STYLE_UNDERLINE_OFF");
+        this.sendEscCmd("UNDERLINE_OFF");
     }
     
     /**
      * Set blinking mode on/off.
      */
     public void sendStyleBlink() {
-        this.sendEscCmd("STYLE_BLINK");
+        this.sendEscCmd("BLINK");
     }
     public void sendStyleBlinkOff() {
-        this.sendEscCmd("STYLE_BLINK_OFF");
+        this.sendEscCmd("BLINK_OFF");
     }
     
     /**
      * Set inverse mode on/off.
      */
     public void sendStyleInverse() {
-        this.sendEscCmd("STYLE_INVERSE");
+        this.sendEscCmd("INVERSE");
     }
     public void sendStyleInverseOff() {
-        this.sendEscCmd("STYLE_INVERSE_OFF");
+        this.sendEscCmd("INVERSE_OFF");
     }
     
     /**
      * Set hidden mode on/off.
      */
     public void sendStyleHidden() {
-        this.sendEscCmd("STYLE_HIDDEN");
+        this.sendEscCmd("HIDDEN");
     }
     public void sendStyleHiddenOff() {
-        this.sendEscCmd("STYLE_HIDDEN_OFF");
+        this.sendEscCmd("HIDDEN_OFF");
     }
     
     /**
      * Set strikethrough mode on/off.
      */
     public void sendStyleStrike() {
-        this.sendEscCmd("STYLE_STRIKE");
+        this.sendEscCmd("STRIKE");
     }
     public void sendStyleStrikeOff() {
-        this.sendEscCmd("STYLE_STRIKE_OFF");
+        this.sendEscCmd("STRIKE_OFF");
     }
     
     
