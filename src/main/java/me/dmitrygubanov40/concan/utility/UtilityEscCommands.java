@@ -16,6 +16,9 @@ public class UtilityEscCommands extends UtilityAscii
     public static final String HOME;
     public static final String CURSOR_ON;
     public static final String CURSOR_OFF;
+    public static final String CURSOR_BLINKING_ON;
+    public static final String CURSOR_BLINKING_OFF;
+    public static final String CURSOR_REPORT;
     //
     public static final String ERASE_ALL_AFTER;
     public static final String ERASE_ALL_BEFORE;
@@ -48,9 +51,12 @@ public class UtilityEscCommands extends UtilityAscii
     
     
     static {
-        HOME        = UtilityEngine.getSimpleEscCmd("HOME");
-        CURSOR_ON   = UtilityEngine.getSimpleEscCmd("CURSOR_ON");
-        CURSOR_OFF  = UtilityEngine.getSimpleEscCmd("CURSOR_OFF");
+        HOME                = UtilityEngine.getSimpleEscCmd("HOME");
+        CURSOR_ON           = UtilityEngine.getSimpleEscCmd("CURSOR_ON");
+        CURSOR_OFF          = UtilityEngine.getSimpleEscCmd("CURSOR_OFF");
+        CURSOR_BLINKING_ON  = UtilityEngine.getSimpleEscCmd("CURSOR_BLINKING_ON");
+        CURSOR_BLINKING_OFF = UtilityEngine.getSimpleEscCmd("CURSOR_BLINKING_OFF");
+        CURSOR_REPORT       = UtilityEngine.getSimpleEscCmd("CURSOR_REPORT");
         //
         ERASE_ALL_AFTER     = UtilityEngine.getSimpleEscCmd("ERASE_ALL_AFTER");
         ERASE_ALL_BEFORE    = UtilityEngine.getSimpleEscCmd("ERASE_ALL_BEFORE");
@@ -187,13 +193,31 @@ public class UtilityEscCommands extends UtilityAscii
     }
     
     /**
-     * Blinking console cursor mode on/off.
+     * Console cursor mode on/off (visibility).
      */
     public void sendCursorOn() {
         this.sendEscCmd("CURSOR_ON");
     }
     public void sendCursorOff() {
         this.sendEscCmd("CURSOR_OFF");
+    }
+    
+    /**
+     * Console cursor blinking mode on/off.
+     */
+    public void sendCursorBlinkingOn() {
+        this.sendEscCmd("CURSOR_BLINKING_ON");
+    }
+    public void sendCursorBlinkingOff() {
+        this.sendEscCmd("CURSOR_BLINKING_OFF");
+    }
+    
+    /**
+     * Get console report of cursor position.
+     * Something like '^[[32;5R' on display (as sequence of keys pressed).
+     */
+    public void sendCursorReport() {
+        this.sendEscCmd("CURSOR_REPORT");
     }
     
     

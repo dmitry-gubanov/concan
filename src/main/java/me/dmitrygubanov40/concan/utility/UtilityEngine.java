@@ -88,8 +88,12 @@ class UtilityEngine
         UtilityEngine.escCommands.put("NEXT",        "#E");     // move cursor to the beginning of next line (X=0, '#'-Y to down)
         UtilityEngine.escCommands.put("PREVIOUS",    "#F");     // move cursor to the beginning of previous line (X=0, '#'-Y up)
         UtilityEngine.escCommands.put("COLUMN",      "#G");     // move cursor to the column number '#' if possible, Y (line) is kept
-        UtilityEngine.escCommands.put("CURSOR_ON",   "?25h");   // show console cursor
-        UtilityEngine.escCommands.put("CURSOR_OFF",  "?25l");   // hide console cursor
+        //
+        UtilityEngine.escCommands.put("CURSOR_ON",          "?25h");    // show console cursor
+        UtilityEngine.escCommands.put("CURSOR_OFF",         "?25l");    // hide console cursor
+        UtilityEngine.escCommands.put("CURSOR_BLINKING_ON", "?12h");    // console cursor blinking is on (if supported)
+        UtilityEngine.escCommands.put("CURSOR_BLINKING_OFF","?12l");    // console cursor blinking is off (if supported)
+        UtilityEngine.escCommands.put("CURSOR_REPORT",      "6n");      // get console report of cursor position
         //
         // Clear functions:
         UtilityEngine.escCommands.put("ERASE_ALL_AFTER",     "0J"); // erase from cursor until end of screen, cursor is kept
