@@ -18,7 +18,7 @@ class UtilityEngine
     
     // 'Glue' for Esc-symbol and the command (sequence) itself.
     private final static String ESC_CMD_SEPARATOR;
-    private final static String ESC_CMD_PARAM;
+    private final static String ESC_CMD_PARAM;// extra parameter in command replacement
     
     // ASCII-codes table
     private final static HashMap<String, Character> charAsciiCodes;
@@ -140,6 +140,7 @@ class UtilityEngine
     
     
     /**
+     * Getter from 'charAsciiCodes'.
      * @param charName codename of character from ASCII table (charAsciiCodes)
      * @return ASCII character as String to use in commands
      * @throws IllegalArgumentException if there is no such ASCII code
@@ -158,6 +159,7 @@ class UtilityEngine
     }
     
     /**
+     * Getter from 'escCommands'.
      * @param cmdName codename of a command from the table (escCommands)
      * @return command representation (string may be necessary to replace the '#')
      * @throws IllegalArgumentException if there is no such command in the table
