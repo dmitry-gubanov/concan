@@ -47,7 +47,7 @@ public class Os
      * @return string code of an OS
      * @throws RuntimeException when OS is unknown
      */
-    public static String getOS() throws RuntimeException {
+    public static String getOsName() throws RuntimeException {
         String codeOs;
         //
         if ( Os.isWindows() ) {
