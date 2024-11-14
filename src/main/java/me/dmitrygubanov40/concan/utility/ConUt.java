@@ -9,7 +9,7 @@ import me.dmitrygubanov40.concan.buffer.OutputBuffer;
  * It includes the base engine and all premade covers with extra methods.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class ConUt extends UtilityEscCommands
+public class ConUt extends UtilityMethods
 {
     
     ////////////////////

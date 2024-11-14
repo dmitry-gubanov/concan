@@ -88,30 +88,68 @@ public class UtilityEscCommands extends UtilityAscii
         BACKGROUND_DEFAULT  = UtilityEngine.getSimpleEscCmd("BACKGROUND_DEFAULT");
     }
     
+    /**
+     * Checks math coordinates (console coordinates), not real console positions
+     * @param coordinate X or Y to check
+     * @throws IllegalArgumentException for illegal console position to move
+     */
+    private void checkCord(final int coordinate) throws IllegalArgumentException {
+        if ( coordinate < 0 || coordinate > Integer.MAX_VALUE ) {
+            String excMsg = "Illegal console coordinate: " + coordinate;
+            throw new IllegalArgumentException(excMsg);
+        }
+    }
+    
+    /**
+     * Check array of console coordinates at once.
+     * @param coordinates array of X or Y to check
+     * @throws IllegalArgumentException if no coordinates were given
+     */
+    private void checkCords(final int... coordinates) throws IllegalArgumentException {
+        if ( coordinates.length < 1 ) {
+            String excMsg = "No coordinates were transmitted";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        for ( int i = 0; i < coordinates.length; i++ ) {
+            this.checkCord(coordinates[ i ]);
+        }
+    }
+    
+    
     
     /**
      * Move to (0, 0) point of console.
+     * (console consider this position as [1, 1])
      */
     public void sendHome() {
         this.sendEscCmd("HOME");
     }
     
     /**
-     * Move to (X, Y) point of console.
+     * Move to (X, Y)-coordinates of console.
+     * Start point is [0, 0] but console consider [1, 1]. So, we need the Shift.
      * @param columnNmb X-coordinate
      * @param lineNmb Y-coordinate
      */
     public void sendGoto(final Integer columnNmb, final Integer lineNmb) {
+        this.checkCords(columnNmb, lineNmb);
+        //
         // switch coordinates to have X-line at first
-        this.sendEscCmd("GOTO", lineNmb, columnNmb);
+        this.sendEscCmd("GOTO", lineNmb + ConCord.SHIFT_X, columnNmb + ConCord.SHIFT_Y);
+    }
+    public void sendGoto(final ConCord position) {
+        this.sendGoto(position.getX(), position.getY());
     }
     
     /**
-     * Move cursor up for some lines (Y).
+     * Move cursor up for some number of lines (Y).
      * X position is kept.
      * @param lines how many lines we will step up
      */
     public void sendUp(final Integer lines) {
+        this.checkCord(lines);
+        //
         this.sendEscCmd("UP", lines);
     }
     public void sendUp() {
@@ -119,12 +157,14 @@ public class UtilityEscCommands extends UtilityAscii
     }
     
     /**
-     * Move cursor down for some lines (Y).
+     * Move cursor down for some number of lines (Y).
      * X position is kept.
      * Console must have enough empty lines, or cursor will move only available ones.
      * @param lines how many lines we will step down
      */
     public void sendDown(final Integer lines) {
+        this.checkCord(lines);
+        //
         this.sendEscCmd("DOWN", lines);
     }
     public void sendDown() {
@@ -138,6 +178,8 @@ public class UtilityEscCommands extends UtilityAscii
      * @param columns how many character positions we will step right
      */
     public void sendRight(final Integer columns) {
+        this.checkCord(columns);
+        //
         this.sendEscCmd("RIGHT", columns);
     }
     public void sendRight() {
@@ -151,6 +193,8 @@ public class UtilityEscCommands extends UtilityAscii
      * @param columns how many character positions we will step left
      */
     public void sendLeft(final Integer columns) {
+        this.checkCord(columns);
+        //
         this.sendEscCmd("LEFT", columns);
     }
     public void sendLeft() {
@@ -163,6 +207,8 @@ public class UtilityEscCommands extends UtilityAscii
      * @param lines how many lines we will go down ('0' works the same way as '1')
      */
     public void sendNextLine(final Integer lines) {
+        this.checkCord(lines);
+        //
         this.sendEscCmd("NEXT", lines);
     }
     public void sendNextLine() {
@@ -175,6 +221,8 @@ public class UtilityEscCommands extends UtilityAscii
      * @param lines how many lines we will go up ('0' works the same way as '1')
      */
     public void sendPreviousLine(final Integer lines) {
+        this.checkCord(lines);
+        //
         this.sendEscCmd("PREVIOUS", lines);
     }
     public void sendPreviousLine() {
@@ -183,13 +231,15 @@ public class UtilityEscCommands extends UtilityAscii
     
     /**
      * Move cursor to the exact column (X).
-     * First position is '1'.
+     * For console the first position is '1', not '0'. Need a Shift.
      * Y position is kept.
      * Console must have enough empty positions, 
      * @param column character position number in the current line we want to install cursor for
      */
     public void sendColumn(final Integer column) {
-        this.sendEscCmd("COLUMN", column);
+        this.checkCord(column);
+        //
+        this.sendEscCmd("COLUMN", column + ConCord.SHIFT_X);
     }
     
     /**

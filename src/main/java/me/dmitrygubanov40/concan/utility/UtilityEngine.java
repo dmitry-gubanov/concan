@@ -18,7 +18,7 @@ class UtilityEngine
     
     // 'Glue' for Esc-symbol and the command (sequence) itself.
     private final static String ESC_CMD_SEPARATOR;
-    private final static String ESC_CMD_PARAM;// extra parameter in command replacement
+    private final static String ESC_CMD_PARAM;// extra argument in command replacement
     
     // ASCII-codes table
     private final static HashMap<String, Character> charAsciiCodes;
@@ -33,7 +33,6 @@ class UtilityEngine
         //
         // ASCII-codes table initialization:
         charAsciiCodes = new HashMap<>();
-        // General ASCII codes:
         initCharAsciiCodes();
         //
         // Escape-commands (sequences) initialization:
@@ -62,6 +61,7 @@ class UtilityEngine
      * To fill the ASCII-codes table.
      */
     private static void initCharAsciiCodes() {
+        UtilityEngine.charAsciiCodes.put("ETX", (char) 0x03);// end of text
         UtilityEngine.charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
         UtilityEngine.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
         UtilityEngine.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
@@ -79,7 +79,7 @@ class UtilityEngine
      */
     private static void initEscCommands() {
         // Cursor control functions:
-        UtilityEngine.escCommands.put("HOME",        "H");      // move cursor to the home position (0, 0)
+        UtilityEngine.escCommands.put("HOME",        "H");      // move cursor to the home position (1, 1)
         UtilityEngine.escCommands.put("GOTO",        "#;#H");   // move cursor to the position (#1, #2) /Y, X/
         UtilityEngine.escCommands.put("UP",          "#A");     // move cursor up for # lines (Y) if possible, X is kept
         UtilityEngine.escCommands.put("DOWN",        "#B");     // move cursor down for # lines (Y) if possible, X is kept
@@ -140,12 +140,12 @@ class UtilityEngine
     
     
     /**
-     * Getter from 'charAsciiCodes'.
+     * Getter from 'charAsciiCodes', char-format.
      * @param charName codename of character from ASCII table (charAsciiCodes)
-     * @return ASCII character as String to use in commands
+     * @return ASCII character to use in commands
      * @throws IllegalArgumentException if there is no such ASCII code
      */
-    protected static String getStrCharByName(final String charName) throws IllegalArgumentException {
+    protected static char getCharByName(final String charName) throws IllegalArgumentException {
         if ( !UtilityEngine.charAsciiCodes.containsKey(charName) ) {
             Set<String> names = UtilityEngine.charAsciiCodes.keySet();
             String excMsg = "There is no '" + charName + "'-char in ASCII-codes table. "
@@ -153,10 +153,30 @@ class UtilityEngine
             throw new IllegalArgumentException(excMsg);
         }
         //
-        Character controlChar = UtilityEngine.charAsciiCodes.get(charName);
-        //
+        char controlChar = UtilityEngine.charAsciiCodes.get(charName);
+        return controlChar;
+    }
+    
+    /**
+     * Getter from 'charAsciiCodes', int-format.
+     * @param charName codename of character from ASCII table (charAsciiCodes)
+     * @return ASCII character as int to use in commands
+     */
+    protected static int getIntCharByName(final String charName) {
+        return (int) UtilityEngine.getCharByName(charName);
+    }
+    
+    /**
+     * Getter from 'charAsciiCodes', String-format.
+     * @param charName codename of character from ASCII table (charAsciiCodes)
+     * @return ASCII character as String to use in commands
+     */
+    protected static String getStrCharByName(final String charName) {
+        Character controlChar = UtilityEngine.getCharByName(charName);
         return controlChar.toString();
     }
+    
+    
     
     /**
      * Getter from 'escCommands'.
