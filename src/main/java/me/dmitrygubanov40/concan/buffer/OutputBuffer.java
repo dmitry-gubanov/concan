@@ -6,7 +6,8 @@ package me.dmitrygubanov40.concan.buffer;
  * Automated buffer for direct console output.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class OutputBuffer {
+public class OutputBuffer
+{
     
     // max length, chars
     private final static int DEFAULT_BUFFER_SIZE;
@@ -37,8 +38,8 @@ public class OutputBuffer {
     }
     
     
-    private BufferString buffer;
-    private int bufferSize;
+    private OutputBufferString buffer;
+    protected int bufferSize;
     
     // Make auto-output when buffer is full, or generate an exception?
     private boolean autoFlush;
@@ -71,8 +72,8 @@ public class OutputBuffer {
         this.bufferSize = initSize;
         //
         this.initBuffer(isSafeAsync);
-        this.setAutoFlush(autoFlushMode);
-        this.setStrictSizeControlMode(strictSizeControlMode);
+        this.changeAutoFlush(autoFlushMode);
+        this.changeStrictSizeControlMode(strictSizeControlMode);
     }
     public OutputBuffer(final int initSize, final boolean isSafeAsync, final boolean autoFlushMode) {
         this(initSize, isSafeAsync, autoFlushMode, DEFAULT_STRICT_SIZE_CONTROL_MODE);
@@ -119,13 +120,20 @@ public class OutputBuffer {
         this.buffer = new OutputBufferString(wasSafeAsyncStatus);
     }
     
+    /**
+     * @return the last string which was added to 'buffer'
+     */
+    protected String getLastAddedStr() {
+        return this.buffer.getLastAddedStr();
+    }
+    
     
     
     /**
      * Wrapper to get the current size (in characters) of our buffer.
      * @return length in symbols, technical - with invisible letters and commands
      */
-    private int getBufferLength() {
+    protected int getBufferLength() {
         return this.buffer.length();
     }
     
@@ -158,7 +166,7 @@ public class OutputBuffer {
      * @return whether our buffer is full (over its limit), or there is more space
      */
     public boolean isFull() {
-        boolean result = (this.getBufferLength() > this.bufferSize);
+        boolean result = (this.getBufferLength() >= this.bufferSize);
         //
         return result;
     }
@@ -169,7 +177,7 @@ public class OutputBuffer {
      * Change buffer regime: auto-generate text in console or generate exceptions?
      * @param autoFlushMode do generate text when buffer is full
      */
-    public final void setAutoFlush(final boolean autoFlushMode) {
+    private void changeAutoFlush(final boolean autoFlushMode) {
         // de-facto mode will not be switched
         if ( this.autoFlush == autoFlushMode ) return;
         //
@@ -178,6 +186,10 @@ public class OutputBuffer {
         if ( this.autoFlush ) this.flush();
         //
         this.autoFlush = autoFlushMode;
+    }
+    // out world wrapper
+    public void setAutoFlush(final boolean autoFlushMode) {
+        this.changeAutoFlush(autoFlushMode);
     }
     public void setAutoFlush() {
         this.setAutoFlush(true);
@@ -190,7 +202,9 @@ public class OutputBuffer {
      * Do not work with an empty buffer.
      */
     public void flush() {
-        if ( this.getBufferLength() <= 0 ) return;
+        // Do not use 'getBufferLength()' because
+        // it can be re-defined in descendants.
+        if ( this.buffer.length() <= 0 ) return;
         //
         this.output();
         this.clearBuffer();
@@ -251,10 +265,14 @@ public class OutputBuffer {
      * Change buffer regime: or rapid appending and flush over buffer size?
      * @param bufferStrictMode do ban to get over the buffer size limit for appending?
      */
-    public final void setStrictSizeControlMode(final boolean bufferStrictMode) {
+    private void changeStrictSizeControlMode(final boolean bufferStrictMode) {
         this.strictSizeControl = bufferStrictMode;
     }
-    public final void setStrictSizeControlMode() {
+    // out world wrapper
+    public void setStrictSizeControlMode(final boolean bufferStrictMode) {
+        this.changeStrictSizeControlMode(bufferStrictMode);
+    }
+    public void setStrictSizeControlMode() {
         this.setStrictSizeControlMode(true);
     }
     
@@ -262,11 +280,11 @@ public class OutputBuffer {
     
     /**
      * Checks whether with the 'newCharsToBuffer' we will exceed the buffer size.
-     * @param newCharsToBuffer string we want to add to the buffer
+     * @param newCharsToBufferLength estimate of length for the string we want to add to the buffer
      * @return true when we won't overstep buffer's size
      */
-    private boolean isUnderBufferSizeLimit(final String newCharsToBuffer) {
-        boolean isUnderLimitRes = (this.getBufferLength() + newCharsToBuffer.length()) <= this.bufferSize;
+    private boolean isUnderBufferSizeLimit(final int newCharsToBufferLength) {
+        boolean isUnderLimitRes = (this.getBufferLength() + newCharsToBufferLength) <= this.bufferSize;
         //
         return isUnderLimitRes;
     }
@@ -308,15 +326,24 @@ public class OutputBuffer {
     }
     
     /**
-     * Put new chars into the buffer.
+     * Logic-holder of add-command.
+     * Need it to implement into different wrappers because need distinguish
+     * common text and commands.
      * @param newCharsToBuffer string to add to the buffer
+     * @param newCharsToBufferLength our estimation of 'newCharsToBuffer' length (for buffer calculations)
      * @throws StringIndexOutOfBoundsException if string is too long and autoflush is off
      */
-    public void add(final String newCharsToBuffer) throws StringIndexOutOfBoundsException {
+    protected void doAdd(final String newCharsToBuffer, int newCharsToBufferLength)
+                    throws StringIndexOutOfBoundsException {
+        // here we use '.length' because we need to catch real empty line
         if ( newCharsToBuffer.length() <= 0 ) return;
         //
-        // current state of buffer even with new chars is less buffer's size
-        if ( this.isUnderBufferSizeLimit(newCharsToBuffer) ) {
+        // Current state of buffer even with new chars is less buffer's size,
+        // or it is an "empty" string (really is not, just checked before).
+        // Here we use 'newCharsToBufferLength' because we need a relative length
+        // the way it is calculated for buffer.
+        if ( this.isUnderBufferSizeLimit(newCharsToBufferLength)
+                || 0 == newCharsToBufferLength ) {
             this.buffer.append(newCharsToBuffer);
             return;
         }
@@ -339,8 +366,9 @@ public class OutputBuffer {
             return;
         }
         //
-        // we must keep buffer size:
-        // (and add new chars by pieces under strict buffer limit)
+        // Here we must keep buffer size
+        // (and add new chars by pieces under strict buffer limit).
+        // This block can not process "empty" (command) strings.
         StringBuilder newCharsToBufferOverSize = new StringBuilder(newCharsToBuffer);
         while ( (this.getBufferLength() + newCharsToBufferOverSize.length()) > this.bufferSize ) {
             int cutStart = 0;
@@ -353,32 +381,59 @@ public class OutputBuffer {
             //
             this.flush();
         }
+        String lastPieceStrAdded = newCharsToBufferOverSize.toString();
         // now we have a piece less then the size. Add it.
-        this.buffer.append(newCharsToBufferOverSize.toString());
+        this.buffer.append(lastPieceStrAdded);
+    }
+    // shot useful wrapper, where length is real length of a char/string
+    protected void doAdd(final String newCharsToBuffer) {
+        this.doAdd(newCharsToBuffer, newCharsToBuffer.length());
+    }
+    
+    /**
+     * Put new chars into the buffer.
+     * @param newCharsToBuffer string to add to the buffer
+     */
+    public void add(final String newCharsToBuffer) {
+        this.doAdd(newCharsToBuffer);
+    }
+    
+    /**
+     * Special chars or escape sequence - to buffer.
+     * @param newCmdCharsToBuffer command string to add to the buffer
+     */
+    public void addCmd(final String newCmdCharsToBuffer) {
+        this.doAdd(newCmdCharsToBuffer);
     }
     
     
     
     /**
-     * Some string must be added to buffer simultaneously, as-is
-     * (all 'wholeCharsToBuffer' will be outputted at one moment).
+     * Logic-holder of addWhole-command.
+     * Need it to implement into different wrappers because need distinguish
+     * common text and commands.
      * If new chars with current buffer are still less than buffer size limit - just add to buffer.
      * Don't work with an empty string.
      * @param wholeCharsToBuffer string to add to the buffer which can not be separated in any way
+     * @param wholeCharsToBufferLength our estimation of 'wholeCharsToBuffer' length (for buffer calculations)
      * @throws StringIndexOutOfBoundsException if whole-string is too long and autoflush is off 
      */
-    public void addWhole(final String wholeCharsToBuffer) throws StringIndexOutOfBoundsException {
+    protected void doAddWhole(final String wholeCharsToBuffer, int wholeCharsToBufferLength)
+                        throws StringIndexOutOfBoundsException {
+        // here we use '.length' because we need to catch real empty line
         if ( wholeCharsToBuffer.length() <= 0 ) return;
         //
-        // whole-string must be less than the buffer size
-        if ( wholeCharsToBuffer.length() > this.bufferSize ) {
+        // Whole-string must be less than the buffer size.
+        // Here we use 'wholeCharsToBufferLength' because we need a relative length
+        // the way it is calculated for buufer.
+        if ( wholeCharsToBufferLength > this.bufferSize ) {
             String excMsg = "Whole string to add to the buffer at once is over of its boundaries";
             throw new StringIndexOutOfBoundsException(excMsg);
         }
         //
         // have enough space - 'wholeCharsToBuffer' will be added in whole
-        if ( this.isUnderBufferSizeLimit(wholeCharsToBuffer) ) {
-            this.add(wholeCharsToBuffer);
+        if ( this.isUnderBufferSizeLimit(wholeCharsToBufferLength) ) {
+            this.buffer.append(wholeCharsToBuffer);
             return;
         }
         // here and next 'wholeCharsToBuffer' will exceed the buffer
@@ -400,6 +455,27 @@ public class OutputBuffer {
         // Make the buffer empty, then add the whole string
         this.flush();
         this.buffer.append(wholeCharsToBuffer);
+    }
+    // shot useful wrapper, where length is real length of a string
+    protected void doAddWhole(final String wholeCharsToBuffer) {
+        this.doAddWhole(wholeCharsToBuffer, wholeCharsToBuffer.length());
+    }
+    
+    /**
+     * Some string must be added to buffer simultaneously, as-is
+     * (all 'wholeCharsToBuffer' will be outputted at one moment).
+     * @param wholeCharsToBuffer string to add to the buffer which can not be separated in any way
+     */
+    public void addWhole(final String wholeCharsToBuffer) {
+        this.doAddWhole(wholeCharsToBuffer);
+    }
+    
+    /**
+     * Special chars or escape sequence - to buffer in whole condition.
+     * @param wholeCmdCharsToBuffer command string to add to the buffer which can not be separated in any way
+     */
+    public void addCmdWhole(final String wholeCmdCharsToBuffer) {
+        this.doAddWhole(wholeCmdCharsToBuffer);
     }
     
     

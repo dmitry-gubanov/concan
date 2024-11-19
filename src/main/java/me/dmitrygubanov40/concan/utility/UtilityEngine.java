@@ -225,8 +225,8 @@ class UtilityEngine
         if ( this.isBuffering() ) {
             //
             // add to the initialized buffer
-            if ( wholeMode )    this.buffer.addWhole(txtToSend);
-            else                this.buffer.add(txtToSend);
+            if ( wholeMode )    this.buffer.addCmdWhole(txtToSend);
+            else                this.buffer.addCmd(txtToSend);
             //
         } else {
             // direct output of the symbol
