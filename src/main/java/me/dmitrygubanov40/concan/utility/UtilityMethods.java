@@ -69,19 +69,10 @@ public class UtilityMethods extends UtilityEscCommands
                     // 'R' is the end of text console self-answer
                     break;
                 }
-                
-                throw new IOException("!!!");
-                
             }
         } catch ( IOException exc ) {
-            String excMsg = "Failed to read the console's buffer (press keys)";
+            String excMsg = "<IOException> Failed to read the console's buffer (key pressed)";
             throw new RuntimeException(excMsg);
-        } finally {
-            // return console mode before crash
-            if ( UtilityMethods.isSttyCoocked() ) {
-                String excMsg = "\n\nConsole's mode switch failed (to coocked-mode)";
-                System.out.println(excMsg);
-            }
         }
         //
         if ( !UtilityMethods.isSttyCoocked() ) {
@@ -92,7 +83,7 @@ public class UtilityMethods extends UtilityEscCommands
         ConCord result;
         result = UtilityMethods.parseConsoleReport(positionAnswer);
         // need a shift to have math coordinates not position:
-        // (coordinate = position - 1)
+        // ([coordinate] = [console position - 1])
         result.setX(result.getX() - ConCord.SHIFT_X);
         result.setY(result.getY() - ConCord.SHIFT_Y);
         //
