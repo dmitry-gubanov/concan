@@ -14,7 +14,11 @@ class OutputBufferString extends BufferString
     private StringBuffer  bufferSafe;   // safe for many threads, but about x2 slower
     // (only one var would be initialized)
     
+    // keeps the last string which was added via 'append'
+    private String lastStrAdded;
     
+    
+    /////
     
     public OutputBufferString(final boolean setSafeAsyncStatus) {
         //
@@ -25,9 +29,16 @@ class OutputBufferString extends BufferString
         } else {
             this.bufferFast = new StringBuilder();
         }
+        //
+        this.lastStrAdded = "";
+    }
+    
+    public String getLastAddedStr() {
+        return this.lastStrAdded;
     }
     
     
+    //////////
     
     @Override
     public int length() {
@@ -53,6 +64,9 @@ class OutputBufferString extends BufferString
     public void append(final String newsChars) {
         if ( this.isSafeAsync() )   this.bufferSafe.append(newsChars);
         else                        this.bufferFast.append(newsChars);
+        //
+        // always know exactly what was added last
+        this.lastStrAdded = newsChars;
     }
     
     @Override
