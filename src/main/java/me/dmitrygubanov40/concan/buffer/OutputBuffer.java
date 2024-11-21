@@ -56,24 +56,28 @@ public class OutputBuffer
      * @param isSafeAsync created for many threads(or for only one thread)?
      * @param autoFlushMode output automatically
      * @param strictSizeControlMode disallow to get over buffer size limit at the moment of appending
-     * @throws IllegalArgumentException with incorrect buffer size
+     * @param minSize minimal buffer size we are allowed to create
+     * @param maxSize maximum buffer size we are allowed to create
      */
     public OutputBuffer(final int initSize,
                         final boolean isSafeAsync,
                         final boolean autoFlushMode,
-                        final boolean strictSizeControlMode)
-            throws IllegalArgumentException {
-        if ( initSize < MIN_BUFFER_SIZE || initSize > MAX_BUFFER_SIZE ) {
-            String excMsg = "Output buffer inappropriate size: " + initSize + "."
-                            + " Must be in range: " + MIN_BUFFER_SIZE + " ... " + MAX_BUFFER_SIZE;
-            throw new IllegalArgumentException(excMsg);
-        }
+                        final boolean strictSizeControlMode,
+                        final int minSize,
+                        final int maxSize) {
         //
+        this.checkBufferSize(initSize, minSize, maxSize);
         this.bufferSize = initSize;
         //
         this.initBuffer(isSafeAsync);
         this.changeAutoFlush(autoFlushMode);
         this.changeStrictSizeControlMode(strictSizeControlMode);
+    }
+    public OutputBuffer(final int initSize,
+                        final boolean isSafeAsync,
+                        final boolean autoFlushMode,
+                        final boolean strictSizeControlMode) {
+        this(initSize, isSafeAsync, autoFlushMode, strictSizeControlMode, MIN_BUFFER_SIZE, MAX_BUFFER_SIZE);
     }
     public OutputBuffer(final int initSize, final boolean isSafeAsync, final boolean autoFlushMode) {
         this(initSize, isSafeAsync, autoFlushMode, DEFAULT_STRICT_SIZE_CONTROL_MODE);
@@ -89,6 +93,28 @@ public class OutputBuffer
     }
     
     
+    /**
+     * @param newSize desired buffer size > 0
+     * @param minSize min buffer size we can accept, '0' - do not check
+     * @param maxSize max buffer size we can accept, '0' - do not check
+     * @throws IllegalArgumentException with incorrect buffer size
+     */
+    private void checkBufferSize(final int newSize, final int minSize, final int maxSize)
+                    throws IllegalArgumentException {
+        String excMsg = "Output buffer inappropriate size: '" + newSize + "'.";
+        if ( newSize <= 0 ) {
+            excMsg += " Must be positive.";
+            throw new IllegalArgumentException(excMsg);
+        }
+        if ( minSize > 0 && newSize < minSize ) {
+            excMsg += " Must be " + minSize + " or greater";
+            throw new IllegalArgumentException(excMsg);
+        }
+        if ( maxSize > 0 && newSize > maxSize ) {
+            excMsg += " Must be less or equal to " + maxSize;
+            throw new IllegalArgumentException(excMsg);
+        }
+    }
     
     /**
      * Create base data storage element for chars.

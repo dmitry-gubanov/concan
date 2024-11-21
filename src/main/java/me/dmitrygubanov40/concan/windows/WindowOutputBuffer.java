@@ -26,10 +26,18 @@ public class WindowOutputBuffer extends OutputBuffer
     // and do not have a length
     private final static int WINDOW_ANY_CMD_LENGTH;
     
+    // window can have only one char width
+    private final static int MIN_WINDOW_BUFFER_SIZE;
+    // window need more resources, and cannot be too long
+    private final static int MAX_WINDOW_BUFFER_SIZE;
+    
     static {
         WINDOW_AUTOFLUSH_MODE = true;
         WINDOW_STRICT_SIZE_CONTROL_MODE = true;
         WINDOW_ANY_CMD_LENGTH = 0;
+        //
+        MIN_WINDOW_BUFFER_SIZE = 1;
+        MAX_WINDOW_BUFFER_SIZE = 1000;
     }
     
     
@@ -49,7 +57,9 @@ public class WindowOutputBuffer extends OutputBuffer
         super(initSize,
                 isSafeAsync,
                 WINDOW_AUTOFLUSH_MODE,
-                WINDOW_STRICT_SIZE_CONTROL_MODE);
+                WINDOW_STRICT_SIZE_CONTROL_MODE,
+                MIN_WINDOW_BUFFER_SIZE,
+                MAX_WINDOW_BUFFER_SIZE);
         //
         this.setBufferVisualLength(0);
     }
