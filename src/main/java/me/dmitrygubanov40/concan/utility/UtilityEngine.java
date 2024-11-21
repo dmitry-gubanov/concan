@@ -265,7 +265,7 @@ class UtilityEngine
      * @return number of hash symbols '#' (UtilityEngine.ESC_CMD_PARAM) in the 'cmd'-string 
      */
     private static int getNmbOfEscCmdParams(final String cmd) {
-        int hashCount = cmd.length() - cmd.replace(UtilityEngine.ESC_CMD_PARAM, "").length();
+        int hashCount = cmd.length() - cmd.replace(ESC_CMD_PARAM, "").length();
         //
         return hashCount;
     }
@@ -277,7 +277,7 @@ class UtilityEngine
     private static String getFullStrEscCmd(String cmd) {
         // Here is 'magic' like "ESC" + "[" + "2J"
         String escCmd = UtilityEngine.getStrCharByName("ESC")
-                        + UtilityEngine.ESC_CMD_SEPARATOR
+                        + ESC_CMD_SEPARATOR
                         + cmd;
         //
         return escCmd;
@@ -349,7 +349,7 @@ class UtilityEngine
         StringBuilder finalCmd = new StringBuilder(cmd);
         //
         for ( Integer currentParam : params ) {
-            int currentHashIndex = finalCmd.indexOf(UtilityEngine.ESC_CMD_PARAM);
+            int currentHashIndex = finalCmd.indexOf(ESC_CMD_PARAM);
             finalCmd.deleteCharAt(currentHashIndex);
             finalCmd.insert(currentHashIndex, currentParam.toString());
         }

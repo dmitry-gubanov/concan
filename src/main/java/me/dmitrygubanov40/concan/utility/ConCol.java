@@ -373,7 +373,7 @@ public enum ConCol
     private boolean isGreyScale() {
         boolean result = false;
         //
-        for ( ConCol curColor : ConCol.GREYSCALE ) {
+        for ( ConCol curColor : GREYSCALE ) {
             if ( this.trueColor.equals(curColor.getTrueColor()) ) {
                 result = true;
                 break;
@@ -390,13 +390,13 @@ public enum ConCol
      */
     public static ConCol getGreyscaleColor(final int index) {
         if ( index < 0 ) {
-            return ConCol.GREYSCALE[0];
+            return GREYSCALE[0];
         }
-        if ( index >= ConCol.GREYSCALE.length ) {
-            return ConCol.GREYSCALE[ ConCol.GREYSCALE.length - 1 ];
+        if ( index >= GREYSCALE.length ) {
+            return GREYSCALE[ GREYSCALE.length - 1 ];
         }
         //
-        return ConCol.GREYSCALE[ index ];
+        return GREYSCALE[ index ];
     }
     
     /**
@@ -412,17 +412,17 @@ public enum ConCol
         //
         int consoleColorCodeVGA = this.getColorCode();
         //
-        if ( this.getColorCode() <= (ConCol.LIMIT_4B / 2) ) {
+        if ( this.getColorCode() <= (LIMIT_4B / 2) ) {
             // first 8 colors shif
-            consoleColorCodeVGA += ConCol.FIRST_COLORS_SHIFT_4B;
+            consoleColorCodeVGA += FIRST_COLORS_SHIFT_4B;
         } else {
             // last 8 colors shift
-            consoleColorCodeVGA += ConCol.LAST_COLORS_SHIFT_4B;
+            consoleColorCodeVGA += LAST_COLORS_SHIFT_4B;
         }
         //
         if ( isBackground ) {
             // special background shift
-            consoleColorCodeVGA += ConCol.BACKGROUND_SHIFT_4B;
+            consoleColorCodeVGA += BACKGROUND_SHIFT_4B;
         }
         //
         return consoleColorCodeVGA;

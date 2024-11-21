@@ -13,6 +13,8 @@ import me.dmitrygubanov40.concan.buffer.OutputBuffer;
  * (special chars and escape sequences).
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
+//class WindowOutputBuffer extends OutputBuffer
+        //!!!!!
 public class WindowOutputBuffer extends OutputBuffer
 {
     
@@ -46,8 +48,8 @@ public class WindowOutputBuffer extends OutputBuffer
     public WindowOutputBuffer(final int initSize, final boolean isSafeAsync) {
         super(initSize,
                 isSafeAsync,
-                WindowOutputBuffer.WINDOW_AUTOFLUSH_MODE,
-                WindowOutputBuffer.WINDOW_STRICT_SIZE_CONTROL_MODE);
+                WINDOW_AUTOFLUSH_MODE,
+                WINDOW_STRICT_SIZE_CONTROL_MODE);
         //
         this.setBufferVisualLength(0);
     }
@@ -149,7 +151,7 @@ public class WindowOutputBuffer extends OutputBuffer
      */
     @Override
     public void addCmd(final String newCmdCharsToBuffer) {
-        this.doAdd(newCmdCharsToBuffer, WindowOutputBuffer.WINDOW_ANY_CMD_LENGTH);
+        this.doAdd(newCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
     }
     
     /**
@@ -176,7 +178,7 @@ public class WindowOutputBuffer extends OutputBuffer
      */
     @Override
     public void addCmdWhole(final String wholeCmdCharsToBuffer) {
-        this.doAddWhole(wholeCmdCharsToBuffer, WindowOutputBuffer.WINDOW_ANY_CMD_LENGTH);
+        this.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
     }
     
     

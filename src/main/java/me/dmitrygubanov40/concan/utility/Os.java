@@ -18,19 +18,19 @@ public class Os
     //////////
     
     public static boolean isWindows() {
-        return Os.NAME.contains("win");
+        return NAME.contains("win");
     }
     
     public static boolean isMac() {
-        return Os.NAME.contains("mac");
+        return NAME.contains("mac");
     }
     
     public static boolean isUnix() {
-        return (Os.NAME.contains("nix") || Os.NAME.contains("aix"));
+        return (NAME.contains("nix") || NAME.contains("aix"));
     }
     
     public static boolean isLinux() {
-        return Os.NAME.contains("nux");
+        return NAME.contains("nux");
     }
     
     public static boolean isNx() {
@@ -38,7 +38,7 @@ public class Os
     }
     
     public static boolean isSolaris() {
-        return Os.NAME.contains("sunos");
+        return NAME.contains("sunos");
     }
     
     

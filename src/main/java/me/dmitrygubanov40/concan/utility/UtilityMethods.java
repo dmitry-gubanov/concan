@@ -102,9 +102,9 @@ public class UtilityMethods extends UtilityEscCommands
             throw new IllegalArgumentException(excMsg);
         }
         //
-        int startIndex = answer.indexOf(UtilityMethods.CONSOLE_REPORT_START_CHAR);
-        int separatorIndex = answer.indexOf(UtilityMethods.CONSOLE_REPORT_SEPARATOR_CHAR);
-        int endIndex = answer.indexOf(UtilityMethods.CONSOLE_REPORT_END_CHAR);
+        int startIndex = answer.indexOf(CONSOLE_REPORT_START_CHAR);
+        int separatorIndex = answer.indexOf(CONSOLE_REPORT_SEPARATOR_CHAR);
+        int endIndex = answer.indexOf(CONSOLE_REPORT_END_CHAR);
         //
         if ( (endIndex - separatorIndex) < 2 || (separatorIndex - startIndex) < 2 ) {
             throw new IllegalArgumentException(excMsg);
