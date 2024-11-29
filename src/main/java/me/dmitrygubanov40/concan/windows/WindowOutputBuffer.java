@@ -1,7 +1,11 @@
 package me.dmitrygubanov40.concan.windows;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.dmitrygubanov40.concan.buffer.OutputBuffer;
+import me.dmitrygubanov40.concan.utility.ConUt;
 
 
 
@@ -13,9 +17,7 @@ import me.dmitrygubanov40.concan.buffer.OutputBuffer;
  * (special chars and escape sequences).
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-//class WindowOutputBuffer extends OutputBuffer
-        //!!!!!
-public class WindowOutputBuffer extends OutputBuffer
+class WindowOutputBuffer extends OutputBuffer
 {
     
     // only this autoflush mode for window
@@ -31,6 +33,11 @@ public class WindowOutputBuffer extends OutputBuffer
     // window need more resources, and cannot be too long
     private final static int MAX_WINDOW_BUFFER_SIZE;
     
+    // list of characters we consider to be essential part
+    // of commands, not regular, visual text into window
+    private static final List<String> cmdCharacters;
+    
+    
     static {
         WINDOW_AUTOFLUSH_MODE = true;
         WINDOW_STRICT_SIZE_CONTROL_MODE = true;
@@ -38,6 +45,16 @@ public class WindowOutputBuffer extends OutputBuffer
         //
         MIN_WINDOW_BUFFER_SIZE = 1;
         MAX_WINDOW_BUFFER_SIZE = 1000;
+        //
+        // All characters we assume can be only in command, not regular text:
+        // (will be filled in descendants)
+        cmdCharacters = new ArrayList<>();
+        cmdCharacters.add(ConUt.ESC);// most important, must be checked first
+        cmdCharacters.add(ConUt.CR);
+        cmdCharacters.add(ConUt.BS);
+        cmdCharacters.add(ConUt.LF);
+        cmdCharacters.add(ConUt.HT);
+        cmdCharacters.add(ConUt.VT);
     }
     
     
@@ -51,7 +68,7 @@ public class WindowOutputBuffer extends OutputBuffer
     /**
      * Base constructor for window's buffer.
      * @param initSize max length (in chars)
-     * @param isSafeAsync created for many threads(or for only one thread)?
+     * @param isSafeAsync created for many threads (or for only one thread)?
      */
     public WindowOutputBuffer(final int initSize, final boolean isSafeAsync) {
         super(initSize,
@@ -139,13 +156,40 @@ public class WindowOutputBuffer extends OutputBuffer
     
     
     /**
+     * Here in 'WindowOutputBuffer' we need carefully check whether it is a command or not.
+     * @param strToCheck text to buffer we must to analyze
+     * @return 'true' in case we consider the line to be a command (escape sequence or special character)
+     */
+    @Override
+    protected boolean isCmdStr(final String strToCheck) {
+        boolean isCmd = false;
+        if ( strToCheck.length() <= 0 ) {
+            return isCmd;
+        }
+        if ( WindowOutputBuffer.cmdCharacters.isEmpty() ) {
+            return isCmd;
+        }
+        //
+        for ( int i = 0; i < WindowOutputBuffer.cmdCharacters.size(); i++ ) {
+            String currentCharCheck = WindowOutputBuffer.cmdCharacters.get(i);
+            if ( strToCheck.contains(currentCharCheck) ) {
+                isCmd = true;
+                break;
+            }
+        }
+        //
+        return isCmd;
+    }
+    
+    
+    /**
      * Suppose to add common non-command visual text via 'add',
      * need to enlarge buffer visual size.
      * @param newCharsToBuffer 
      */
     @Override
-    public void add(final String newCharsToBuffer) {
-        super.add(newCharsToBuffer);
+    protected void addText(final String newCharsToBuffer) {
+        super.addText(newCharsToBuffer);
         //
         // for regular buffer addition - enlarge visual counter
         // by the last added str
@@ -160,34 +204,36 @@ public class WindowOutputBuffer extends OutputBuffer
      * @param newCmdCharsToBuffer
      */
     @Override
-    public void addCmd(final String newCmdCharsToBuffer) {
+    protected void addCmd(final String newCmdCharsToBuffer) {
+        // second arguments is crucial:
         this.doAdd(newCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
     }
     
     /**
-     * Suppose to add common non-command visual text via 'addWhole',
+     * Suppose to add common non-command visual text,
      * need to enlarge buffer visual size.
      * @param wholeCharsToBuffer 
      */
     @Override
-    public void addWhole(final String wholeCharsToBuffer) {
-        super.addWhole(wholeCharsToBuffer);
+    protected void addTextWhole(final String wholeCharsToBuffer) {
+        super.addTextWhole(wholeCharsToBuffer);
         //
         // for regular buffer addition - enlarge visual counter
         // For 'whole'-addition the chars would be added,
         // or an exception will come.
-        this.addToBufferVisualLength(wholeCharsToBuffer);
+        this.addToBufferVisualLength(this.getLastAddedStr());
     }
     
     /**
-     * Suppose to add only command visual text via 'addCmdWhole',
+     * Suppose to add only command text,
      * enlargement of buffer visual size is prohibited.
      * We assume that any command can be added, because commands
      * do not have length in window's output buffer.
      * @param wholeCmdCharsToBuffer 
      */
     @Override
-    public void addCmdWhole(final String wholeCmdCharsToBuffer) {
+    protected void addCmdWhole(final String wholeCmdCharsToBuffer) {
+        // second arguments is crucial:
         this.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
     }
     

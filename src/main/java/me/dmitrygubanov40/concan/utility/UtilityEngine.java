@@ -223,13 +223,12 @@ class UtilityEngine
         }
         //
         if ( this.isBuffering() ) {
-            //
             // add to the initialized buffer
-            if ( wholeMode )    this.buffer.addCmdWhole(txtToSend);
-            else                this.buffer.addCmd(txtToSend);
+            if ( wholeMode )    this.buffer.addWhole(txtToSend);
+            else                this.buffer.add(txtToSend);
             //
         } else {
-            // direct output of the symbol
+            // direct output of the symbol, always - 'as-is' (whole mode)
             this.output(txtToSend);
         }
     }

@@ -352,6 +352,19 @@ public class OutputBuffer
     }
     
     /**
+     * @param strToCheck
+     * @return 'true' in case we consider the line to be a command (escape sequence, special character)
+     */
+    protected boolean isCmdStr(final String strToCheck) {
+        // Here in 'OutputBuffer' we do not need
+        // a real separation between visual text and a command.
+        // Done to be overridden in more complex buffers.
+        return false;
+    }
+    
+    
+    
+    /**
      * Logic-holder of add-command.
      * Need it to implement into different wrappers because need distinguish
      * common text and commands.
@@ -417,18 +430,35 @@ public class OutputBuffer
     }
     
     /**
-     * Put new chars into the buffer.
+     * Put any new chars into the buffer.
+     * Auto-detection whether it is a command or a visual text.
      * @param newCharsToBuffer string to add to the buffer
      */
     public void add(final String newCharsToBuffer) {
-        this.doAdd(newCharsToBuffer);
+        // special case if we detected command
+        if ( this.isCmdStr(newCharsToBuffer) ) {
+            this.addCmd(newCharsToBuffer);
+            return;
+            // that is all for command
+        }
+        //
+        // only for the case of regular visual text
+        this.addText(newCharsToBuffer);
+    }
+    
+    /**
+     * Regular, visual user's text - to buffer.
+     * @param newTextCharsToBuffer visual text string to add to the buffer
+     */
+    protected void addText(final String newTextCharsToBuffer) {
+        this.doAdd(newTextCharsToBuffer);
     }
     
     /**
      * Special chars or escape sequence - to buffer.
      * @param newCmdCharsToBuffer command string to add to the buffer
      */
-    public void addCmd(final String newCmdCharsToBuffer) {
+    protected void addCmd(final String newCmdCharsToBuffer) {
         this.doAdd(newCmdCharsToBuffer);
     }
     
@@ -493,14 +523,30 @@ public class OutputBuffer
      * @param wholeCharsToBuffer string to add to the buffer which can not be separated in any way
      */
     public void addWhole(final String wholeCharsToBuffer) {
-        this.doAddWhole(wholeCharsToBuffer);
+        // special case if we detected command-in-whole
+        if ( this.isCmdStr(wholeCharsToBuffer) ) {
+            this.addCmdWhole(wholeCharsToBuffer);
+            return;
+            // that is all for command
+        }
+        //
+        // only for the case of regular visual text-in-whole
+        this.addTextWhole(wholeCharsToBuffer);
+    }
+    
+    /**
+     * Regular, visual user's text - to buffer in whole condition.
+     * @param wholeTextCharsToBuffer string to add to the buffer which can not be separated in any way
+     */
+    protected void addTextWhole(final String wholeTextCharsToBuffer) {
+        this.doAddWhole(wholeTextCharsToBuffer);
     }
     
     /**
      * Special chars or escape sequence - to buffer in whole condition.
      * @param wholeCmdCharsToBuffer command string to add to the buffer which can not be separated in any way
      */
-    public void addCmdWhole(final String wholeCmdCharsToBuffer) {
+    protected void addCmdWhole(final String wholeCmdCharsToBuffer) {
         this.doAddWhole(wholeCmdCharsToBuffer);
     }
     
