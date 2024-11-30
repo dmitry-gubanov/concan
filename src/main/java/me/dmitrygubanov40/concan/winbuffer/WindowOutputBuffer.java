@@ -1,4 +1,4 @@
-package me.dmitrygubanov40.concan.windows;
+package me.dmitrygubanov40.concan.winbuffer;
 
 
 import java.util.ArrayList;
@@ -12,12 +12,12 @@ import me.dmitrygubanov40.concan.utility.ConUt;
 /**
  * Automated buffer for output in console window.
  * For window only visual strings are important.
- * Suppose that 'add' and 'addWhole' add visual text,
+ * Suppose that 'addText' and 'addTextWhole' add visual text,
  * while 'addCmd' and 'addCmdWhole' - invisible commands
  * (special chars and escape sequences).
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-class WindowOutputBuffer extends OutputBuffer
+public class WindowOutputBuffer extends OutputBuffer
 {
     
     // only this autoflush mode for window
