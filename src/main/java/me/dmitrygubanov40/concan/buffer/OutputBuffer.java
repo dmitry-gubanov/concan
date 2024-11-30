@@ -209,7 +209,7 @@ public class OutputBuffer
         //
         // in case we currently have auto-flush - make output before the switch
         // (it will work only if buffer is not empty)
-        if ( this.autoFlush ) this.flush();
+        if ( this.autoFlush ) this.autoflush();
         //
         this.autoFlush = autoFlushMode;
     }
@@ -235,6 +235,18 @@ public class OutputBuffer
         this.output();
         this.clearBuffer();
     }
+    
+    
+    protected void autoflush() throws RuntimeException {
+        if ( !this.autoFlush ) {
+            String excMsg = "Buffer called autoflush, but autoflush mode is off";
+            throw new RuntimeException(excMsg);
+        }
+        //
+        // regular 'flush()'
+        this.flush();
+    }
+    
     
     
     /**
@@ -266,8 +278,10 @@ public class OutputBuffer
         if ( buffLength < endSliceIndex ) return;
         // 
         // with this 'slice' it will be identical to 'flush':
+        // output all, clear all the buffer
         if ( 0 == startSliceIndex && buffLength <= sliceSize ) {
-            this.flush();
+            this.output();
+            this.clearBuffer();
             return;
         }
         //
@@ -401,7 +415,7 @@ public class OutputBuffer
         // quick appending over buffer size is allowed:
         if ( !this.strictSizeControl ) {
             this.buffer.append(newCharsToBuffer);
-            this.flush();
+            this.autoflush();
             return;
         }
         //
@@ -418,7 +432,7 @@ public class OutputBuffer
             //
             newCharsToBufferOverSize = newCharsToBufferOverSize.delete(cutStart, cutEnd);
             //
-            this.flush();
+            this.autoflush();
         }
         String lastPieceStrAdded = newCharsToBufferOverSize.toString();
         // now we have a piece less then the size. Add it.
@@ -503,13 +517,13 @@ public class OutputBuffer
         // we are allowed to overstep the limit for a step
         if ( !this.strictSizeControl ) {
             this.buffer.append(wholeCharsToBuffer);
-            this.flush();
+            this.autoflush();
             return;
         }
         //
         // Now, we are in strict zone.
         // Make the buffer empty, then add the whole string
-        this.flush();
+        this.autoflush();
         this.buffer.append(wholeCharsToBuffer);
     }
     // shot useful wrapper, where length is real length of a string
