@@ -17,7 +17,9 @@ import me.dmitrygubanov40.concan.utility.ConUt;
  * (special chars and escape sequences).
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class WindowOutputBuffer extends OutputBuffer
+public class WindowOutputBuffer
+        extends OutputBuffer
+        implements WinBufEventImpulser
 {
     
     // only this autoflush mode for window
@@ -62,6 +64,9 @@ public class WindowOutputBuffer extends OutputBuffer
     // Here and next we consider 'send...'-methods to be invisible.
     private int bufferVisualLength;
     
+    // list of everything which wants to react out changes
+    private List<WinBufEventListener> eventListeners;
+    
     
     /////////////
     
@@ -79,7 +84,53 @@ public class WindowOutputBuffer extends OutputBuffer
                 MAX_WINDOW_BUFFER_SIZE);
         //
         this.setBufferVisualLength(0);
+        this.eventListeners = new ArrayList<>();
     }
+    
+    /////////////
+    
+    @Override
+    public void addEventListener(final WinBufEventListener listener) {
+        this.eventListeners.add(listener);
+    }
+    
+    @Override
+    public void removeEventListener(final WinBufEventListener listener) {
+        this.eventListeners.remove(listener);
+    }
+    
+    @Override
+    public void notifyEventListeners(final WinBufEvent event) {
+        if ( this.eventListeners.isEmpty() ) return;
+        //
+        for ( WinBufEventListener currentListener : this.eventListeners )
+            currentListener.onWindowOutputBufferEvent(event);
+    }
+    
+    /**
+     * Full version to rapid generate of events from 'WindowOutputBuffer' in one line.
+     * @param genEventType event type from 'WinBufEventType'
+     * @param genEventFlags any states or conditions in integer
+     * @param genEventText extra free text in event
+     */
+    public void generateEvent(final WinBufEventType genEventType,
+                                final int genEventFlags,
+                                final String genEventText) {
+        WinBufEvent genEvent = new WinBufEvent(this, genEventType, genEventFlags, genEventText);
+        this.notifyEventListeners(genEvent);
+    }
+    public void generateEvent(final WinBufEventType genEventType,
+                                final int genEventFlags) {
+        this.generateEvent(genEventType, genEventFlags, "");
+    }
+    public void generateEvent(final WinBufEventType genEventType,
+                                final String genEventText) {
+        this.generateEvent(genEventType, 0, genEventText);
+    }
+    public void generateEvent(final WinBufEventType genEventType) {
+        this.generateEvent(genEventType, 0, "");
+    }
+    
     
     /////////////
     
@@ -148,9 +199,13 @@ public class WindowOutputBuffer extends OutputBuffer
      */
     @Override
     public void flush() {
+        this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH);
+        //
         super.flush();
         //
         this.setBufferVisualLength(0);
+        //
+        this.generateEvent(WinBufEventType.ON_AFTER_FLUSH);
     }
     
     
