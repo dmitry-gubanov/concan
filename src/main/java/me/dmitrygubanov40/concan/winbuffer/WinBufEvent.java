@@ -42,10 +42,10 @@ public class WinBufEvent extends EventObject
                         final String initEventText,
                         final long initEventTimeMs) {
         super(initSource);
-        this.eventType = initEventType;
-        this.eventFlags = initEventFlags;
-        this.eventText = initEventText;
-        this.eventTimeMs = initEventTimeMs;
+        this.eventType      = initEventType;
+        this.eventFlags     = initEventFlags;
+        this.eventText      = initEventText;
+        this.eventTimeMs    = initEventTimeMs;
     }
     //
     // sub-constructor of any kind
@@ -58,10 +58,10 @@ public class WinBufEvent extends EventObject
         // stam the time ourselves:
         final long initEventTimeMs = System.currentTimeMillis();
         //
-        this.eventType = initEventType;
-        this.eventFlags = initEventFlags;
-        this.eventText = initEventText;
-        this.eventTimeMs = initEventTimeMs;// (auto)
+        this.eventType      = initEventType;
+        this.eventFlags     = initEventFlags;
+        this.eventText      = initEventText;
+        this.eventTimeMs    = initEventTimeMs;  // (auto)
     }
     //
     public WinBufEvent(final Object initSource,
@@ -73,10 +73,10 @@ public class WinBufEvent extends EventObject
         // stam the time ourselves:
         final long initEventTimeMs = System.currentTimeMillis();
         //
-        this.eventType = initEventType;
-        this.eventFlags = initEventFlags;   // (auto)
-        this.eventText = initEventText;
-        this.eventTimeMs = initEventTimeMs; // (auto)
+        this.eventType      = initEventType;
+        this.eventFlags     = initEventFlags;   // (auto)
+        this.eventText      = initEventText;
+        this.eventTimeMs    = initEventTimeMs;  // (auto)
     }
     //
     public WinBufEvent(final Object initSource,
@@ -88,10 +88,10 @@ public class WinBufEvent extends EventObject
         // stam the time ourselves:
         final long initEventTimeMs = System.currentTimeMillis();
         //
-        this.eventType = initEventType;
-        this.eventFlags = initEventFlags;
-        this.eventText = initEventText;     // (auto)
-        this.eventTimeMs = initEventTimeMs; // (auto)
+        this.eventType      = initEventType;
+        this.eventFlags     = initEventFlags;
+        this.eventText      = initEventText;    // (auto)
+        this.eventTimeMs    = initEventTimeMs;  // (auto)
     }
     //
     public WinBufEvent(final Object initSource,
@@ -103,10 +103,10 @@ public class WinBufEvent extends EventObject
         // stam the time ourselves:
         final long initEventTimeMs = System.currentTimeMillis();
         //
-        this.eventType = initEventType;
-        this.eventFlags = initEventFlags;   // (auto)
-        this.eventText = initEventText;     // (auto)
-        this.eventTimeMs = initEventTimeMs; // (auto)
+        this.eventType      = initEventType;
+        this.eventFlags     = initEventFlags;   // (auto)
+        this.eventText      = initEventText;    // (auto)
+        this.eventTimeMs    = initEventTimeMs;  // (auto)
     }
     
     
