@@ -51,7 +51,7 @@ public class WindowOutputBuffer
         // All characters we assume can be only in command, not regular text:
         // (will be filled in descendants)
         cmdCharacters = new ArrayList<>();
-        cmdCharacters.add(ConUt.ESC);// most important, must be checked first
+        cmdCharacters.add(ConUt.ESC);// most important, must be checked first for 'break'
         cmdCharacters.add(ConUt.CR);
         cmdCharacters.add(ConUt.BS);
         cmdCharacters.add(ConUt.LF);
@@ -195,17 +195,32 @@ public class WindowOutputBuffer
     
     
     /**
-     * Do the flush, and clear visual length.
+     * Send pre-event, do the flush, clear visual length, and send post-event.
      */
     @Override
     public void flush() {
-        this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH);
+        // know via event everything are ready to output
+        this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH,
+                            this.getBufferLength(), // our data about line length
+                            this.getBufferStr());   // current buffer string line
         //
         super.flush();
         //
         this.setBufferVisualLength(0);
         //
         this.generateEvent(WinBufEventType.ON_AFTER_FLUSH);
+    }
+    
+    /**
+     * Send pre-event, do auto-flush, and send post-event.
+     */
+    @Override
+    protected void autoflush() {
+        this.generateEvent(WinBufEventType.ON_BEFORE_AUTOFLUSH);
+        //
+        super.autoflush();
+        //
+        this.generateEvent(WinBufEventType.ON_AFTER_AUTOFLUSH);
     }
     
     
