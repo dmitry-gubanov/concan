@@ -226,6 +226,7 @@ public class OutputBuffer
     /**
      * Output to console all the buffer, then clear the buffer.
      * Do not work with an empty buffer.
+     * Can be used any time by outsource.
      */
     public void flush() {
         // Do not use 'getBufferLength()' because
@@ -236,7 +237,10 @@ public class OutputBuffer
         this.clearBuffer();
     }
     
-    
+    /**
+     * Flush by 'OutputBuffer' itself when buffer is full automatically.
+     * @throws RuntimeException if is run without auto-flush regime
+     */
     protected void autoflush() throws RuntimeException {
         if ( !this.autoFlush ) {
             String excMsg = "Buffer called autoflush, but autoflush mode is off";
