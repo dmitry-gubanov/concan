@@ -166,6 +166,19 @@ public class OutputBuffer
     
     
     /**
+     * @return string line of current buffer
+     * @throws NullPointerException in case buffer is not initialized
+     */
+    protected String getBufferStr() throws NullPointerException {
+        if ( null == this.buffer ) {
+            String excMsg = "Buffer is not initialized";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        return this.buffer.toString();
+    }
+    
+    /**
      * Print current state of the buffer to console.
      * Has the exact mechanism to draw to the console.
      */
