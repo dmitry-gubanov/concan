@@ -102,16 +102,16 @@ public class UtilityMethods extends UtilityEscCommands
             throw new IllegalArgumentException(excMsg);
         }
         //
-        int startIndex = answer.indexOf(CONSOLE_REPORT_START_CHAR);
-        int separatorIndex = answer.indexOf(CONSOLE_REPORT_SEPARATOR_CHAR);
-        int endIndex = answer.indexOf(CONSOLE_REPORT_END_CHAR);
+        int startIndex      = answer.indexOf(CONSOLE_REPORT_START_CHAR);
+        int separatorIndex  = answer.indexOf(CONSOLE_REPORT_SEPARATOR_CHAR);
+        int endIndex        = answer.indexOf(CONSOLE_REPORT_END_CHAR);
         //
         if ( (endIndex - separatorIndex) < 2 || (separatorIndex - startIndex) < 2 ) {
             throw new IllegalArgumentException(excMsg);
         }
         //
-        String xCordStr = answer.substring(startIndex + 1, separatorIndex);
-        String yCordStr = answer.substring(separatorIndex + 1, endIndex);
+        String xCordStr = answer.substring(separatorIndex + 1, endIndex);
+        String yCordStr = answer.substring(startIndex + 1, separatorIndex);
         int xCord = Integer.parseInt(xCordStr);
         int yCord = Integer.parseInt(yCordStr);
         //
