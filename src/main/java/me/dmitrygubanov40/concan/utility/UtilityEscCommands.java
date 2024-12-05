@@ -28,6 +28,8 @@ public class UtilityEscCommands extends UtilityAscii
     public static final String ERASE_LINE;
     //
     public static final String RESET;
+    public static final String SAVE;
+    public static final String RESTORE;
     //
     public static final String BOLD;
     public static final String BOLD_OFF;
@@ -65,7 +67,9 @@ public class UtilityEscCommands extends UtilityAscii
         ERASE_LINE_BEFORE   = UtilityEngine.getSimpleEscCmd("ERASE_LINE_BEFORE");
         ERASE_LINE          = UtilityEngine.getSimpleEscCmd("ERASE_LINE");
         //
-        RESET = UtilityEngine.getSimpleEscCmd("RESET");
+        RESET   = UtilityEngine.getSimpleEscCmd("RESET");
+        SAVE    = UtilityEngine.getSimpleEscCmd("SAVE");
+        RESTORE = UtilityEngine.getSimpleEscCmd("RESTORE");
         //
         BOLD            = UtilityEngine.getSimpleEscCmd("BOLD");
         BOLD_OFF        = UtilityEngine.getSimpleEscCmd("BOLD_OFF");
@@ -327,6 +331,22 @@ public class UtilityEscCommands extends UtilityAscii
      */
     public void sendReset() {
         this.sendEscCmd("RESET");
+    }
+    
+    /**
+     * Save in terminal conditions current cursor position
+     * and all style settings.
+     */
+    public void sendSave() {
+        this.sendEscCmd("SAVE");
+    }
+    
+    /**
+     * Restore from terminal conditions earlier saved cursor position
+     * and all style settings.
+     */
+    public void sendRestore() {
+        this.sendEscCmd("RESTORE");
     }
     
     

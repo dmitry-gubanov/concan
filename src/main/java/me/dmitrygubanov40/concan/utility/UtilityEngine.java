@@ -104,7 +104,9 @@ class UtilityEngine
         UtilityEngine.escCommands.put("ERASE_LINE",          "2K"); // clear all the current line, cursor is kept
         //
         // Style control functions:
-        UtilityEngine.escCommands.put("RESET", "0m");// reset all - both styles and color
+        UtilityEngine.escCommands.put("RESET",      "0m");  // reset all - both styles and color
+        UtilityEngine.escCommands.put("SAVE",       "s");   // save cursor position and all settings
+        UtilityEngine.escCommands.put("RESTORE",    "u");   // restore earlier saved cursor position and all settings
         //
         UtilityEngine.escCommands.put("BOLD",           "1m");  // letters are twice bolder
         UtilityEngine.escCommands.put("BOLD_OFF",       "22m"); // bold is off (same for dim-mode)
