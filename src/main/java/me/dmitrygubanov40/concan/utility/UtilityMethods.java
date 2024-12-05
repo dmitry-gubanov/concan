@@ -16,13 +16,21 @@ public class UtilityMethods extends UtilityEscCommands
     private final static String CONSOLE_REPORT_SEPARATOR_CHAR;
     private final static String CONSOLE_REPORT_END_CHAR;
     
+    // assume terminal can not be more than it,
+    // try this point to get width and height of terminal
+    private final static ConCord CONSOLE_MAX_SIZE;
+    
     static {
         CONSOLE_REPORT_START_CHAR = "[";
         CONSOLE_REPORT_SEPARATOR_CHAR = ";";
         CONSOLE_REPORT_END_CHAR = "R";
+        //
+        CONSOLE_MAX_SIZE = new ConCord(1000, 1000);
     }
     
     //////////
+    
+    // get console cursor position //
     
     /**
      * ONLY FOR UNIX AND LINUX.
@@ -156,6 +164,40 @@ public class UtilityMethods extends UtilityEscCommands
         String[] cmdarrCoocked = new String[] {"/bin/sh", "-c", "stty cooked echo < /dev/tty"};
         return UtilityMethods.isConsoleCmdExecuted(cmdarrCoocked);
     }
+    
+    // end console cursor position //
+    
+    
+    /**
+     * Get current max X and Y coordinates of any char in console window.
+     * If maximum axis X is '10' than eleven characters can be place
+     * from '0' to '10'.
+     * @return (maxX, maxY) in 'ConCord'
+     */
+    public static ConCord getTerminalMaxCoord() {
+        ConUt conTool = new ConUt();
+        conTool.sendGoto(CONSOLE_MAX_SIZE);
+        ConCord consoleMaxCoord = UtilityMethods.getCursorPosition();
+        //
+        return consoleMaxCoord;
+    }
+    
+    /**
+     * Calculate current width and height of console window.
+     * In character's positions, e.g. width '10' means terminal
+     * has 10 characters in axis X, coordinates on X are 0..9.
+     * @return (width, height) in 'ConCord'
+     */
+    public static ConCord getTerminalSize() {
+        ConCord consoleMaxCoord = UtilityMethods.getTerminalMaxCoord();
+        //
+        // need to shift becouse position is calculated in coordinates
+        int width = consoleMaxCoord.getX() + ConCord.SHIFT_X;
+        int height = consoleMaxCoord.getY() + ConCord.SHIFT_Y;
+        //
+        return new ConCord(width, height);
+    }
+    
     
     
 }
