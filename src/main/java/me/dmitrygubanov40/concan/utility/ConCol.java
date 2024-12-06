@@ -303,6 +303,11 @@ public enum ConCol
     // includes black and white colors as part of spectrum
     private static final ConCol[] GREYSCALE;
     
+    
+    // two delta^2 between black and white colors
+    private static final double MAX_RGB_COLOR_DELTA_POWED2;
+    
+    
     static {
         LIMIT_4B = 16;
         FIRST_COLORS_SHIFT_4B = 30;
@@ -317,6 +322,8 @@ public enum ConCol
                         GREYSCALE13, GREYSCALE14, GREYSCALE15, GREYSCALE16, GREYSCALE17, GREYSCALE18,
                         GREYSCALE19, GREYSCALE20, GREYSCALE21, GREYSCALE22, GREYSCALE23, GREYSCALE24,
                         WHITE };
+        //
+        MAX_RGB_COLOR_DELTA_POWED2 = 2 * (3 * 255*255);
     }
     
     
@@ -432,6 +439,62 @@ public enum ConCol
     }
     public int getBackgroundCodeVGA() {
         return this.getColorVGA(true);
+    }
+    
+    
+    
+    /**
+     * 
+     * @param colorRgb random true color we search an analog in 'ConCol'
+     * @return the most close visually 'ConCol'-color (via chosen method)
+     */
+    public static ConCol getAnalog(final Color colorRgb) {
+        // default values to start:
+        ConCol result = ConCol.BLACK;   // we will update and return this
+        double minDelta = MAX_RGB_COLOR_DELTA_POWED2;
+        //
+        ConCol[] allConsoleColors = ConCol.class.getEnumConstants();// get all our colors
+        for ( ConCol currentConCol : allConsoleColors ) {
+            //
+            double currentDelta = colorDeltaPowed2(colorRgb, currentConCol.getTrueColor());
+            //
+            if ( 0 == currentDelta) {
+                // it is the final answer - the same color
+                result = currentConCol;
+                break;
+            }
+            //
+            if ( currentDelta < minDelta ) {
+                // got a bit more close color in our enum list
+                minDelta = currentDelta;
+                result = currentConCol;
+            }
+        }
+        //
+        return result;
+    }
+    
+    /**
+     * Calculates colors delta^2 by "redmean" method.
+     * https://en.wikipedia.org/wiki/Color_difference
+     * @param color1
+     * @param color2
+     * @return RGB-color delta
+     */
+    private static double colorDeltaPowed2(final Color color1, final Color color2) {
+        double result;
+        //
+        double mediumRed    = 0.5 * (color1.getRed() + color2.getRed());
+        //
+        double deltaRed     = color1.getRed()   - color2.getRed();
+        double deltaGreen   = color1.getGreen() - color2.getGreen();
+        double deltaBlue    = color1.getBlue()  - color2.getBlue();
+        //
+        result = (2 + mediumRed / 256) * deltaRed * deltaRed
+                + 4 * deltaGreen * deltaGreen
+                + (2 + (255 - mediumRed) / 256) * deltaBlue * deltaBlue;
+        //
+        return result;
     }
     
     
