@@ -304,8 +304,11 @@ public enum ConCol
     private static final ConCol[] GREYSCALE;
     
     
-    // two delta^2 between black and white colors
+    // two (x2) delta^2 between black and white colors (to start search)
     private static final double MAX_RGB_COLOR_DELTA_POWED2;
+    
+    // enought color delta^2 to consider color is the same
+    private static final double MIN_RGB_COLOR_DELTA_POWED2;
     
     
     static {
@@ -324,6 +327,7 @@ public enum ConCol
                         WHITE };
         //
         MAX_RGB_COLOR_DELTA_POWED2 = 2 * (3 * 255*255);
+        MIN_RGB_COLOR_DELTA_POWED2 = 55 * 55;// calculated experimentally
     }
     
     
@@ -468,6 +472,8 @@ public enum ConCol
                 // got a bit more close color in our enum list
                 minDelta = currentDelta;
                 result = currentConCol;
+                // the color is close enough to be "the same"
+                if ( minDelta < MIN_RGB_COLOR_DELTA_POWED2 ) break;
             }
         }
         //
