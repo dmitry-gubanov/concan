@@ -113,6 +113,9 @@ public class ConDraw
         // save cursor:
         conTool.sendSave();
         //
+        // cannot go far away these coordinates
+        ConCord maxTermCoord = ConUt.getTerminalMaxCoord();
+        //
         // install filling, ConCol/Color approaches:
         if ( fill.isConCol() ) {
             // pre-made console colors
@@ -134,6 +137,13 @@ public class ConDraw
         //
         // main drawing:
         for ( ConCord curDrawPoint : coords ) {
+            //
+            // preventer of leaving terminal window
+            if ( curDrawPoint.getX() > maxTermCoord.getX()
+                    || curDrawPoint.getY() > maxTermCoord.getY() ) {
+                continue;
+            }
+            //
             conTool.sendGoto(curDrawPoint);
             System.out.print(fill.getBrush());
         }
