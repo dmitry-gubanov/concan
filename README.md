@@ -7,4 +7,5 @@ Include:
 2. ANSI Escape Sequences
 3. Colors Console Control: system 16 colors, indexed 256 colors, and TrueColor 24 bits
 4. Support of 'Get Cursor Position'-escape sequence
-5. Inner Benchmark Tester
+5. Console painter class
+6. Inner Benchmark Tester
