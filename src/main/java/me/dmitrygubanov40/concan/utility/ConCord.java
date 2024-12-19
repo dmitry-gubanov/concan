@@ -26,17 +26,43 @@ public class ConCord
     
     
     /**
+     * Summarize coordinates by each axis.
+     * (1, 10) plus (3, 7) -> (4, 17)
+     * @param coordsToSum array of coordinates to sum up
+     * @return point with the sum of X and Y coordinates
+     * @throws IllegalArgumentException when less than one argument
+     */
+    public static ConCord getSum(ConCord... coordsToSum)
+                    throws IllegalArgumentException {
+        if ( coordsToSum.length <= 0 ) {
+            String excMsg = "Need points to sum up. Number of arguments passed: "
+                                + coordsToSum.length;
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        int sumX = coordsToSum[0].getX();
+        int sumY = coordsToSum[0].getY();
+        //
+        for ( int i = 1; i < coordsToSum.length; i++ ) {
+            sumX += coordsToSum[ i ].getX();
+            sumY += coordsToSum[ i ].getY();
+        }
+        //
+        return new ConCord(sumX, sumY);
+    }
+    
+    /**
      * Pass through coordinates to search for minimal X and Y.
      * Minimal X or Y could be taken from different points:
      * (1, 10) and (3, 7) -> (1, 7)
      * @param coordsToCheck array of coordinates to check
      * @return point with minimal X and Y
-     * @throws IllegalArgumentException when less than two arguments
+     * @throws IllegalArgumentException when less than one argument
      */
     public static ConCord getMin(ConCord... coordsToCheck)
                             throws IllegalArgumentException {
-        if ( coordsToCheck.length <= 1 ) {
-            String excMsg = "Must compare at least two points. Arguments passed: "
+        if ( coordsToCheck.length <= 0 ) {
+            String excMsg = "Need points to compare. Number of arguments passed: "
                                 + coordsToCheck.length;
             throw new IllegalArgumentException(excMsg);
         }
@@ -58,12 +84,12 @@ public class ConCord
      * (1, 10) and (3, 7) -> (3, 10)
      * @param coordsToCheck array of coordinates to check
      * @return point with maximal X and Y
-     * @throws IllegalArgumentException when less than two arguments
+     * @throws IllegalArgumentException when less than one argument
      */
     public static ConCord getMax(ConCord... coordsToCheck)
                             throws IllegalArgumentException {
-        if ( coordsToCheck.length <= 1 ) {
-            String excMsg = "Must compare at least two points. Arguments passed: "
+        if ( coordsToCheck.length <= 0 ) {
+            String excMsg = "Need points to compare. Number of arguments passed: "
                                 + coordsToCheck.length;
             throw new IllegalArgumentException(excMsg);
         }
@@ -152,6 +178,22 @@ public class ConCord
      */
     public int getY() {
         return this.Y;
+    }
+    
+    
+    
+    /**
+     * @param add coordinate we will add
+     * @return sum of this point and the 'add'
+     * @throws NullPointerException in case of adding the null
+     */
+    public ConCord plus(ConCord add) throws NullPointerException {
+        if ( null == add ) {
+            String excMsg = "Cannot add 'null' to the point";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        return ConCord.getSum(this, add);
     }
     
     
