@@ -83,7 +83,6 @@ public class WindowOutputBuffer
                 MIN_WINDOW_BUFFER_SIZE,
                 MAX_WINDOW_BUFFER_SIZE);
         //
-        this.setBufferVisualLength(0);
         this.eventListeners = new ArrayList<>();
     }
     
@@ -103,8 +102,18 @@ public class WindowOutputBuffer
     public void notifyEventListeners(final WinBufEvent event) {
         if ( this.eventListeners.isEmpty() ) return;
         //
-        for ( WinBufEventListener currentListener : this.eventListeners )
+        for ( WinBufEventListener currentListener : this.eventListeners ) {
             currentListener.onWindowOutputBufferEvent(event);
+        }
+    }
+    
+    /**
+     * Check if the 'potentialListener' is already in the list.
+     * @param potentialListener object we check
+     * @return whether we have such a listener
+     */
+    public boolean isAlreadyListener(WinBufEventListener potentialListener) {
+        return this.eventListeners.contains(potentialListener);
     }
     
     /**
@@ -116,7 +125,10 @@ public class WindowOutputBuffer
     public void generateEvent(final WinBufEventType genEventType,
                                 final int genEventFlags,
                                 final String genEventText) {
-        WinBufEvent genEvent = new WinBufEvent(this, genEventType, genEventFlags, genEventText);
+        WinBufEvent genEvent = new WinBufEvent(this,
+                                                genEventType,
+                                                genEventFlags,
+                                                genEventText);
         this.notifyEventListeners(genEvent);
     }
     public void generateEvent(final WinBufEventType genEventType,
@@ -134,39 +146,6 @@ public class WindowOutputBuffer
     
     /////////////
     
-    /**
-     * Update 'bufferVisualLength' (visual part).
-     * @param newVisualLength new value to install
-     * @throws IllegalArgumentException for negative length
-     */
-    private void setBufferVisualLength(final int newVisualLength) throws IllegalArgumentException {
-        if ( newVisualLength < 0 ) {
-            String excMsg = "Incorrect buffer visual length to set: " + newVisualLength;
-            throw new IllegalArgumentException(excMsg);
-        }
-        this.bufferVisualLength = newVisualLength;
-    }
-    
-    /**
-     * Add some length to visual part buffer ('bufferVisualLength').
-     * @param visualString visual string to buffer
-     */
-    private void addToBufferVisualLength(final String visualString) {
-        int newVisualLength = this.getBufferLength();
-        newVisualLength += visualString.length();
-        //
-        this.setBufferVisualLength(newVisualLength);
-    }
-    
-    /**
-     * @return (for window) current buffer visual length
-     */
-    @Override
-    protected int getBufferLength() {
-        return this.bufferVisualLength;
-    }
-    
-    
     
     // banned
     @Override
@@ -175,7 +154,7 @@ public class WindowOutputBuffer
         String excMsg = "Cannot change autoflush mode for window's output buffer";
         throw new IllegalCallerException(excMsg);
     }
-    
+    /*
     // banned
     @Override
     public void sliceOut(final int sliceSize, final int startSliceIndex)
@@ -183,7 +162,7 @@ public class WindowOutputBuffer
         String excMsg = "Cannot slice part of buffer for window's output buffer";
         throw new IllegalCallerException(excMsg);
     }
-    
+    */
     // banned
     @Override
     public void setStrictSizeControlMode(final boolean bufferStrictMode)
@@ -199,16 +178,22 @@ public class WindowOutputBuffer
      */
     @Override
     public void flush() {
+        final int keptBeforeFlushLength = this.getBufferLength();
+        final String keptBeforeFlushStr = this.getBufferStr();
+        //
         // know via event everything are ready to output
         this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH,
-                            this.getBufferLength(), // our data about line length
-                            this.getBufferStr());   // current buffer string line
+                            keptBeforeFlushLength,  // _our_ data about line length (can be zero for commands)
+                            keptBeforeFlushStr);    // current buffer string line
+        //
+        // store buffer's string and length after 'before'-event
+        final int keptBehindBeforeFlushLength = this.getBufferLength();
+        final String keptBehindBeforeFlushStr = this.getBufferStr();
         //
         super.flush();
         //
-        this.setBufferVisualLength(0);
-        //
-        this.generateEvent(WinBufEventType.ON_AFTER_FLUSH);
+        // 'after'-events recieves buffer data after 'before'-event
+        this.generateEvent(WinBufEventType.ON_AFTER_FLUSH, keptBehindBeforeFlushLength, keptBehindBeforeFlushStr);
     }
     
     /**
@@ -216,11 +201,29 @@ public class WindowOutputBuffer
      */
     @Override
     protected void autoflush() {
-        this.generateEvent(WinBufEventType.ON_BEFORE_AUTOFLUSH);
+        final String keptStr = this.getBufferStr();
+        final int calculatedKeptStrLength;
+        if ( this.isCmdStr(keptStr) ) {
+            calculatedKeptStrLength = 0;
+        } else {
+            calculatedKeptStrLength = keptStr.length();
+        }
+        // So, if 'calculatedKeptStrLength' is zero we got line with some sort of command.
+        //
+        this.generateEvent(WinBufEventType.ON_BEFORE_AUTOFLUSH,
+                            calculatedKeptStrLength,    // length of string which we want to consider
+                            keptStr);                   // current buffer string line
+        //
+        // store buffer's string and length after 'before'-event
+        final int keptBehindBeforeAutoflushLength = this.getBufferLength();
+        final String keptBehindBeforeAutoflushStr = this.getBufferStr();
         //
         super.autoflush();
         //
-        this.generateEvent(WinBufEventType.ON_AFTER_AUTOFLUSH);
+        // 'after'-events recieves buffer data after 'before'-event
+        this.generateEvent(WinBufEventType.ON_AFTER_AUTOFLUSH,
+                            keptBehindBeforeAutoflushLength,
+                            keptBehindBeforeAutoflushStr);
     }
     
     
@@ -232,79 +235,83 @@ public class WindowOutputBuffer
      */
     @Override
     protected boolean isCmdStr(final String strToCheck) {
-        boolean isCmd = false;
+        boolean isCmdStatus = false;
         if ( strToCheck.length() <= 0 ) {
-            return isCmd;
+            return isCmdStatus;
         }
         if ( WindowOutputBuffer.cmdCharacters.isEmpty() ) {
-            return isCmd;
+            return isCmdStatus;
         }
         //
         for ( int i = 0; i < WindowOutputBuffer.cmdCharacters.size(); i++ ) {
             String currentCharCheck = WindowOutputBuffer.cmdCharacters.get(i);
             if ( strToCheck.contains(currentCharCheck) ) {
-                isCmd = true;
+                isCmdStatus = true;
                 break;
             }
         }
         //
-        return isCmd;
+        return isCmdStatus;
     }
     
     
+    
     /**
-     * Suppose to add common non-command visual text via 'add',
-     * need to enlarge buffer visual size.
+     * Suppose to add common non-command visual text via 'add'.
      * @param newCharsToBuffer 
      */
     @Override
     protected void addText(final String newCharsToBuffer) {
+        //
         super.addText(newCharsToBuffer);
         //
-        // for regular buffer addition - enlarge visual counter
-        // by the last added str
-        // ('newCharsToBuffer' could be cut because of buffer size limit)
-        this.addToBufferVisualLength(this.getLastAddedStr());
     }
     
     /**
      * Special chars or escape sequence - to buffer.
-     * We assume that any special char can be added, because such characters
-     * do not have length in window's output buffer.
+     * Only whole-adding -> This is a clone of the 'addCmdWhole'-method.
      * @param newCmdCharsToBuffer
      */
     @Override
     protected void addCmd(final String newCmdCharsToBuffer) {
-        // second arguments is crucial:
-        this.doAdd(newCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
+        //
+        // Always add commands (escape sequences, special symbols) as whole word.
+        // * * *
+        this.addCmdWhole(newCmdCharsToBuffer);
+        // * * *
+        //
     }
     
     /**
-     * Suppose to add common non-command visual text,
-     * need to enlarge buffer visual size.
+     * Suppose to add common non-command visual text.
      * @param wholeCharsToBuffer 
      */
     @Override
     protected void addTextWhole(final String wholeCharsToBuffer) {
+        //
         super.addTextWhole(wholeCharsToBuffer);
         //
-        // for regular buffer addition - enlarge visual counter
-        // For 'whole'-addition the chars would be added,
-        // or an exception will come.
-        this.addToBufferVisualLength(this.getLastAddedStr());
     }
     
     /**
      * Suppose to add only command text,
-     * enlargement of buffer visual size is prohibited.
-     * We assume that any command can be added, because commands
-     * do not have length in window's output buffer.
+     * enlargement of buffer visual size is prohibited ('WINDOW_ANY_CMD_LENGTH').
+     * We assume that any special char can be added, because such characters
+     * do not have length in window's output buffer ('WINDOW_ANY_CMD_LENGTH').
+     * Pre- and post-events included to work with zero-size strings of commands.
      * @param wholeCmdCharsToBuffer 
      */
     @Override
     protected void addCmdWhole(final String wholeCmdCharsToBuffer) {
-        // second arguments is crucial:
+        //
+        this.generateEvent(WinBufEventType.ON_BEFORE_CMD_SENT,
+                            wholeCmdCharsToBuffer); // our command
+        //
+        // second arguments is crucial (as empty string with zero-length):
         this.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
+        //
+        this.generateEvent(WinBufEventType.ON_AFTER_CMD_SENT,
+                            wholeCmdCharsToBuffer);
     }
     
     
