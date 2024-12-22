@@ -40,6 +40,7 @@ public class OutputBuffer
     
     private OutputBufferString buffer;
     protected int bufferSize;
+    private int bufferLength;
     
     // Make auto-output when buffer is full, or generate an exception?
     private boolean autoFlush;
@@ -127,6 +128,7 @@ public class OutputBuffer
             throw new IllegalStateException(excMsg);
         }
         this.buffer = new OutputBufferString(isSafeAsync);
+        this.setBufferLength(0);
     }
     
     /**
@@ -144,6 +146,7 @@ public class OutputBuffer
         // re-new with the same one
         boolean wasSafeAsyncStatus = this.buffer.isSafeAsync();
         this.buffer = new OutputBufferString(wasSafeAsyncStatus);
+        this.setBufferLength(0);
     }
     
     /**
@@ -160,10 +163,48 @@ public class OutputBuffer
      * @return length in symbols, technical - with invisible letters and commands
      */
     protected int getBufferLength() {
-        return this.buffer.length();
+        return this.bufferLength;
     }
     
+    /**
+     * Setter of buffer string length.
+     * Not always we calculate buffer's length via simple string length,
+     * possible to change with direct installation.
+     * @param newLength all new length we will install
+     * @throws IllegalArgumentException for negative values
+     */
+    protected void setBufferLength(final int newLength)
+                        throws IllegalArgumentException {
+        if ( newLength < 0 ) {
+            String excMsg = "Buffer's cannot have negative length,"
+                            + " replaced by '" + newLength + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        this.bufferLength = newLength;
+    }
     
+    /**
+     * Add/Subtract some value of buffer's length.
+     * Works with 'OutputBuffer' system methods 'getBufferLength' and 'setBufferLength'.
+     * @param lengthChange the number we will plus (or minus)
+     * @throws IllegalArgumentException in case buffer's length becomes negative
+     */
+    private void changeBufferLength(final int lengthChange)
+                                throws IllegalArgumentException {
+        if ( 0 == lengthChange ) return;// do nothing
+        //
+        int curLength = this.getBufferLength();
+        int newLength = curLength + lengthChange;
+        if ( newLength < 0 ) {
+            String excMsg = "Buffer's cannot have negative length:"
+                            + " current length is'" + curLength + "',"
+                            + " change by '" + lengthChange + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        this.setBufferLength(newLength);
+    }
     
     /**
      * @return string line of current buffer
@@ -179,12 +220,102 @@ public class OutputBuffer
     }
     
     /**
+     * Extract some substring from the buffer line.
+     * @param start char index to start removing
+     * @param end char index to stop removing
+     * @param bufLength such we consider the current buffer length *before* deleting
+     * @throws IllegalArgumentException when 'start' or 'end' less zero, or start > end
+     * @throws StringIndexOutOfBoundsException when indexes are out of string
+     */
+    private void deleteFromBuffer(final int start, final int end, final int bufLength)
+                        throws IllegalArgumentException, StringIndexOutOfBoundsException {
+        if ( start < 0 || end <= 0 || start >= end ) {
+            String excMsg = "Incorrect parameters to delete a substring from the buffer,"
+                                + " start: '" + start + "', end: '" + end + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        if ( bufLength < 0 ) {
+            String excMsg = "Cannot work with buffer, considered to be less than zero,"
+                                + " buffer length: '" + bufLength + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        final int realBufLengthBefore = this.buffer.length();
+        if ( start >= realBufLengthBefore || end >= realBufLengthBefore ) {
+            String excMsg = "Parameters to delete a substring from the buffer exceed the string length,"
+                                + " start: '" + start + "', end: '" + end
+                                + "', buffer length: '" + realBufLengthBefore + "'";
+            throw new StringIndexOutOfBoundsException(excMsg);
+        }
+        //
+        //
+        // removed from the buffer
+        this.buffer.delete(start, end);
+        //
+        final int newBufLength;
+        if ( 0 == bufLength ) {
+            // at the point we could have really empty buffer, so the zero length
+            // was made intentionally, we must keep it
+            newBufLength = 0;
+        } else {
+            // in case we had real length, in it just calculated
+            final int sliceLength = end - start;
+            final int realBufLengthAfter = bufLength - sliceLength;
+            newBufLength = realBufLengthAfter;
+        }
+        this.setBufferLength(newBufLength);
+    }
+    
+    /**
+     * Add some characters to the buffer string.
+     * Does not control buffer size limit, only add and calculate new length.
+     * Must be used in upper level methods.
+     * @param newChars string we want to add
+     * @param newCharsLength we presume the string we are adding has such length
+     * @throws IllegalArgumentException when 'newCharsLength' less than zero
+     */
+    private void appendToBuffer(final String newChars, final int newCharsLength)
+                        throws IllegalArgumentException {
+        if ( newCharsLength < 0 ) {
+            String excMsg = "Cannot work with the string, which length considered to be less than zero,"
+                                + " string length: '" + newCharsLength + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        if ( newChars.length() <= 0 ) return;// no real characters to add
+        //
+        // and chars and correct the length:
+        this.buffer.append(newChars);
+        this.changeBufferLength(newCharsLength);
+    }
+    
+    /**
+     * Add string to the buffer without direct size.
+     * Appropriate for regular text, not commands.
+     * @param newChars what to add
+     * @throws IllegalArgumentException when command line is given
+     */
+    private void appendToBuffer(final String newChars) {
+        if ( this.isCmdStr(newChars) ) {
+            String excMsg = "Cannot append the command to the buffer";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        final int newCharsLength = newChars.length();
+        this.appendToBuffer(newChars, newCharsLength);
+    }
+    
+    
+    
+    /**
      * Print current state of the buffer to console.
      * Has the exact mechanism to draw to the console.
+     * All must be calculated before 'output()'. The method only placing the chars.
+     * @param outputStr final sting to place into console.
      */
-    private void output() {
+    protected void output(final String outputStr) {
         //
-        System.out.print(this.buffer.toString());
+        System.out.print(outputStr);
         //
     }
     
@@ -192,7 +323,7 @@ public class OutputBuffer
      * Print the part of buffer (when we slice it).
      * @param slice part of buffer to be shown
      */
-    private void outputSlice(final String slice) {
+    protected void outputSlice(final String slice) {
         //
         System.out.print(slice);
         //
@@ -238,15 +369,10 @@ public class OutputBuffer
     
     /**
      * Output to console all the buffer, then clear the buffer.
-     * Do not work with an empty buffer.
      * Can be used any time by outsource.
      */
     public void flush() {
-        // Do not use 'getBufferLength()' because
-        // it can be re-defined in descendants.
-        if ( this.buffer.length() <= 0 ) return;
-        //
-        this.output();
+        this.output(this.buffer.toString());
         this.clearBuffer();
     }
     
@@ -260,7 +386,7 @@ public class OutputBuffer
             throw new RuntimeException(excMsg);
         }
         //
-        // regular 'flush()'
+        // do regular flush
         this.flush();
     }
     
@@ -270,44 +396,50 @@ public class OutputBuffer
      * Get slice from 'startSliceIndex' with size of 'sliceSize', show in console,
      * and then remove the slice from the buffer.
      * Do not work with an empty buffer.
-     * If buffer is less or equal than 'sliceSize' (and  'startSliceIndex' is zero), we will get the 'flush'-method.
+     * If buffer is less or equal than 'sliceSize' (and  'startSliceIndex' is zero),
+     * we will get the 'flush'-method.
      * @param sliceSize number of chars in buffer's slice (string) to cut
      * @param startSliceIndex first character index of the slice
      * @throws IllegalArgumentException sliceSize > 0, startSliceIndex >= 0
      */
-    public void sliceOut(final int sliceSize, final int startSliceIndex) throws IllegalArgumentException {
+    public void sliceOut(final int sliceSize, final int startSliceIndex)
+                    throws IllegalArgumentException {
         if ( sliceSize <= 0 ) {
-            String excMsg = "Cannot slice-out buffer with the slice length: '" + sliceSize + "'";
+            String excMsg = "Cannot slice-out buffer with the slice length: '"
+                                + sliceSize + "'";
             throw new IllegalArgumentException(excMsg);
         }
         if ( startSliceIndex < 0 ) {
-            String excMsg = "Cannot slice-out buffer with the start char at index: '" + startSliceIndex + "'";
+            String excMsg = "Cannot slice-out buffer with the start char at index: '"
+                                + startSliceIndex + "'";
             throw new IllegalArgumentException(excMsg);
         }
         //
-        int buffLength = this.getBufferLength();
+        final int calculatedBufLength = this.getBufferLength();
+        //
+        // here works with real chars positions:
+        final int buffLengthReal = this.buffer.length();
         final int endSliceIndex = startSliceIndex + sliceSize;
         //
         // we must have buffer:
-        if ( buffLength <= 0 ) return;
+        if ( buffLengthReal <= 0 ) return;
         //
         // the buffer must have the tail we want to slice:
-        if ( buffLength < endSliceIndex ) return;
+        if ( buffLengthReal < endSliceIndex ) return;
         // 
         // with this 'slice' it will be identical to 'flush':
         // output all, clear all the buffer
-        if ( 0 == startSliceIndex && buffLength <= sliceSize ) {
-            this.output();
-            this.clearBuffer();
+        if ( 0 == startSliceIndex && buffLengthReal <= sliceSize ) {
+            this.flush();
             return;
         }
         //
-        // need to get the slice from buffer
+        // show the part we are removing:
         String slice = this.buffer.substring(startSliceIndex, endSliceIndex);
-        // show
         this.outputSlice(slice);
-        // removed from the buffer
-        this.buffer.delete(startSliceIndex, endSliceIndex);
+        //
+        // make the buffer shorter:
+        this.deleteFromBuffer(startSliceIndex, endSliceIndex, calculatedBufLength);
     }
     public void sliceOut(final int sliceSize) {
         this.sliceOut(sliceSize, 0);
@@ -390,7 +522,10 @@ public class OutputBuffer
         // Here in 'OutputBuffer' we do not need
         // a real separation between visual text and a command.
         // Done to be overridden in more complex buffers.
+        //
+        // * * * * *
         return false;
+        // * * * * *
     }
     
     
@@ -401,11 +536,11 @@ public class OutputBuffer
      * common text and commands.
      * @param newCharsToBuffer string to add to the buffer
      * @param newCharsToBufferLength our estimation of 'newCharsToBuffer' length (for buffer calculations)
-     * @throws StringIndexOutOfBoundsException if string is too long and autoflush is off
+     * @throws StringIndexOutOfBoundsException if string is too long and auto-flush is off
      */
     protected void doAdd(final String newCharsToBuffer, int newCharsToBufferLength)
                     throws StringIndexOutOfBoundsException {
-        // here we use '.length' because we need to catch real empty line
+        // here we use 'length()' because we need to pass by real empty line
         if ( newCharsToBuffer.length() <= 0 ) return;
         //
         // Current state of buffer even with new chars is less buffer's size,
@@ -414,7 +549,7 @@ public class OutputBuffer
         // the way it is calculated for buffer.
         if ( this.isUnderBufferSizeLimit(newCharsToBufferLength)
                 || 0 == newCharsToBufferLength ) {
-            this.buffer.append(newCharsToBuffer);
+            this.appendToBuffer(newCharsToBuffer, newCharsToBufferLength);
             return;
         }
         // Here we have the text which will exceed the buffer size.
@@ -431,7 +566,7 @@ public class OutputBuffer
         //
         // quick appending over buffer size is allowed:
         if ( !this.strictSizeControl ) {
-            this.buffer.append(newCharsToBuffer);
+            this.appendToBuffer(newCharsToBuffer, newCharsToBufferLength);
             this.autoflush();
             return;
         }
@@ -445,15 +580,15 @@ public class OutputBuffer
             int cutEnd = this.bufferSize - this.getBufferLength();
             //
             String pieceOfNewCharsToAdd = newCharsToBufferOverSize.substring(cutStart, cutEnd);
-            this.buffer.append(pieceOfNewCharsToAdd);
+            this.appendToBuffer(pieceOfNewCharsToAdd);
             //
             newCharsToBufferOverSize = newCharsToBufferOverSize.delete(cutStart, cutEnd);
             //
             this.autoflush();
         }
         String lastPieceStrAdded = newCharsToBufferOverSize.toString();
-        // now we have a piece less then the size. Add it.
-        this.buffer.append(lastPieceStrAdded);
+        // Now we have a piece less then the size. Add it.
+        this.appendToBuffer(lastPieceStrAdded);
     }
     // shot useful wrapper, where length is real length of a char/string
     protected void doAdd(final String newCharsToBuffer) {
@@ -503,7 +638,7 @@ public class OutputBuffer
      * Don't work with an empty string.
      * @param wholeCharsToBuffer string to add to the buffer which can not be separated in any way
      * @param wholeCharsToBufferLength our estimation of 'wholeCharsToBuffer' length (for buffer calculations)
-     * @throws StringIndexOutOfBoundsException if whole-string is too long and autoflush is off 
+     * @throws StringIndexOutOfBoundsException if whole-string is too long and auto-flush is off 
      */
     protected void doAddWhole(final String wholeCharsToBuffer, int wholeCharsToBufferLength)
                         throws StringIndexOutOfBoundsException {
@@ -520,7 +655,7 @@ public class OutputBuffer
         //
         // have enough space - 'wholeCharsToBuffer' will be added in whole
         if ( this.isUnderBufferSizeLimit(wholeCharsToBufferLength) ) {
-            this.buffer.append(wholeCharsToBuffer);
+            this.appendToBuffer(wholeCharsToBuffer, wholeCharsToBufferLength);
             return;
         }
         // here and next 'wholeCharsToBuffer' will exceed the buffer
@@ -533,7 +668,7 @@ public class OutputBuffer
         //
         // we are allowed to overstep the limit for a step
         if ( !this.strictSizeControl ) {
-            this.buffer.append(wholeCharsToBuffer);
+            this.appendToBuffer(wholeCharsToBuffer, wholeCharsToBufferLength);
             this.autoflush();
             return;
         }
@@ -541,7 +676,7 @@ public class OutputBuffer
         // Now, we are in strict zone.
         // Make the buffer empty, then add the whole string
         this.autoflush();
-        this.buffer.append(wholeCharsToBuffer);
+        this.appendToBuffer(wholeCharsToBuffer, wholeCharsToBufferLength);
     }
     // shot useful wrapper, where length is real length of a string
     protected void doAddWhole(final String wholeCharsToBuffer) {
