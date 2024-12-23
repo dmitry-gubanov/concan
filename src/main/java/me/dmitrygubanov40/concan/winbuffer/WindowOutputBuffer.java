@@ -154,15 +154,7 @@ public class WindowOutputBuffer
         String excMsg = "Cannot change autoflush mode for window's output buffer";
         throw new IllegalCallerException(excMsg);
     }
-    /*
-    // banned
-    @Override
-    public void sliceOut(final int sliceSize, final int startSliceIndex)
-                    throws IllegalCallerException {
-        String excMsg = "Cannot slice part of buffer for window's output buffer";
-        throw new IllegalCallerException(excMsg);
-    }
-    */
+    
     // banned
     @Override
     public void setStrictSizeControlMode(final boolean bufferStrictMode)
