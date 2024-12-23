@@ -325,7 +325,7 @@ public class OutputBuffer
      */
     protected void outputSlice(final String slice) {
         //
-        System.out.print(slice);
+        this.output(slice);
         //
     }
     
