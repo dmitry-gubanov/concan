@@ -227,7 +227,7 @@ public class OutputBuffer
      * @throws IllegalArgumentException when 'start' or 'end' less zero, or start > end
      * @throws StringIndexOutOfBoundsException when indexes are out of string
      */
-    private void deleteFromBuffer(final int start, final int end, final int bufLength)
+    protected void deleteFromBuffer(final int start, final int end, final int bufLength)
                         throws IllegalArgumentException, StringIndexOutOfBoundsException {
         if ( start < 0 || end <= 0 || start >= end ) {
             String excMsg = "Incorrect parameters to delete a substring from the buffer,"
@@ -241,7 +241,7 @@ public class OutputBuffer
         }
         //
         final int realBufLengthBefore = this.buffer.length();
-        if ( start >= realBufLengthBefore || end >= realBufLengthBefore ) {
+        if ( start > realBufLengthBefore || end > realBufLengthBefore ) {
             String excMsg = "Parameters to delete a substring from the buffer exceed the string length,"
                                 + " start: '" + start + "', end: '" + end
                                 + "', buffer length: '" + realBufLengthBefore + "'";
@@ -547,8 +547,7 @@ public class OutputBuffer
         // or it is an "empty" string (really is not, just checked before).
         // Here we use 'newCharsToBufferLength' because we need a relative length
         // the way it is calculated for buffer.
-        if ( this.isUnderBufferSizeLimit(newCharsToBufferLength)
-                || 0 == newCharsToBufferLength ) {
+        if ( this.isUnderBufferSizeLimit(newCharsToBufferLength) ) {
             this.appendToBuffer(newCharsToBuffer, newCharsToBufferLength);
             return;
         }
