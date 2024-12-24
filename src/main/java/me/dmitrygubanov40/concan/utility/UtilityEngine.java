@@ -201,6 +201,26 @@ class UtilityEngine
     
     
     /**
+     * @return array of characters considered as commands (special chars).
+     */
+    public static char[] getSpecialAsciiCodes() {
+        final int codesNumber = UtilityEngine.charAsciiCodes.size();
+        char[] codes = new char[ codesNumber ];
+        //
+        int i = 0;
+        for ( char curAsciiCode : UtilityEngine.charAsciiCodes.values() ) {
+            codes[ i ] = curAsciiCode;
+            i++;
+        }
+        //
+        return codes;
+    }
+    
+    
+    ////////////////////
+    
+    
+    /**
      * Simple output (when buffer is not used).
      * Ignores empty string.
      * @param charStr text to be simply printed in console
