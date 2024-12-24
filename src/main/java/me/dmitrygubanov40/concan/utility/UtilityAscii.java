@@ -30,6 +30,40 @@ class UtilityAscii extends UtilityEngine
     }
     
     
+    
+    /**
+     * @param symbol character we analyze
+     * @return 'true' when it is regular visible char, 'false' otherwise
+     */
+    public static boolean isPrintableChar(final char symbol) {
+        boolean result = true;
+        //
+        int symbolValue = (int) symbol;
+        // first ASCII-table characters or 'Delete'-key:
+        if ( symbolValue < 0x20 || symbolValue == 0x7F ) {
+            result = false;
+        }
+        //
+        return result;
+    }
+    
+    /**
+     * @param symbol string with a char we analyze
+     * @return 'true' when it is regular visible char, 'false' otherwise
+     * @throws IllegalArgumentException if symbol-string is not one-char string
+     */
+    public static boolean isPrintableChar(final String symbol)
+                            throws IllegalArgumentException {
+        if ( symbol.length() != 1 ) {
+            String excMsg = "String with one symbol expected, got '" + symbol + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        return UtilityAscii.isPrintableChar(symbol.charAt(0));
+    }
+    
+    
+    
     /**
      * "To the beginning of the line"
      * Send "carriage-return" command
