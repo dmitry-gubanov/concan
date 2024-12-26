@@ -142,7 +142,11 @@ public class UtilityMethods extends UtilityEscCommands
         boolean cmdResult = true;
         //
         try {
-            Runtime.getRuntime().exec(consoleCmd).waitFor();
+            Process consoleCmdProcess = Runtime.getRuntime().exec(consoleCmd);
+            consoleCmdProcess.waitFor();
+            if ( consoleCmdProcess.exitValue() != 0 ) {
+                cmdResult = false;
+            }
         } catch ( IOException | InterruptedException ex ) {
             cmdResult = false;
         }
@@ -196,6 +200,66 @@ public class UtilityMethods extends UtilityEscCommands
         int height = consoleMaxCoord.getY() + ConCord.SHIFT_Y;
         //
         return new ConCord(width, height);
+    }
+    
+    
+    
+    /**
+     * ONLY FOR UNIX AND LINUX.
+     * Call 'speaker-test' to imitate desktop beeper.
+     * @param freq frequency of sine wave, Hz
+     * @param millis sound length, milliseconds (1000 -> 1 second)
+     * @throws RuntimeException when called for non-*nix OS, or could not
+     *                          address PC speaker (device)
+     * @throws IllegalArgumentException for impossible parameters
+     */
+    public static void runBeeper(final int freq, final int millis)
+                        throws RuntimeException {
+        if ( !Os.isNx() ) {
+            // not Linux neither UNIX, method is unapplicable
+            String excMsg = "Method is supported only by UNIX and Linux OS";
+            throw new RuntimeException(excMsg);
+        }
+        //
+        final int MIN_FREQ = 20;
+        final int MAX_FREQ = 20000;
+        //
+        if ( freq < MIN_FREQ || freq > MAX_FREQ || millis <= 0 ) {
+            String excMsg = "Illegal arguments for beeper: "
+                                + freq + " Hz, " + millis + " ms";
+            throw new RuntimeException(excMsg);
+        }
+        //
+        final double sec = (double) millis / 1000;
+        String bashCmd = "( speaker-test -t sine -f " + freq + " ) & pid=$! ;"
+                            + " sleep " + sec + " ;"
+                            + " kill -9 $pid";
+        //
+        new Thread( () -> {
+            String[] consoleCmd = new String[] {"/bin/sh", "-c", bashCmd};
+            //
+            if ( !UtilityMethods.isConsoleCmdExecuted(consoleCmd) ) {
+                String excMsg = "Failed to address PC speaker [" + bashCmd + "]";
+                throw new RuntimeException(excMsg);
+            }
+        }).start();
+    }
+    
+    /**
+     * Generate short beep-like sound from PC speaker or analog.
+     */
+    public static void beep() {
+        if ( Os.isWindows() || Os.isMac() ) {
+            // it is a pitty it does not work in linux
+            java.awt.Toolkit.getDefaultToolkit().beep();
+        }
+        //
+        if ( Os.isNx() ) {
+            // use system 'speaker-test' to beep
+            final int BEEP_FREQ = 750;// Hz
+            final int BEEP_TIME = 300;// ms
+            UtilityMethods.runBeeper(BEEP_FREQ, BEEP_TIME);
+        }
     }
     
     
