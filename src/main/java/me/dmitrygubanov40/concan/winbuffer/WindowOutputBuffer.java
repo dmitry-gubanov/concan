@@ -3,6 +3,8 @@ package me.dmitrygubanov40.concan.winbuffer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import me.dmitrygubanov40.concan.buffer.OutputBuffer;
 import me.dmitrygubanov40.concan.utility.ConUt;
@@ -39,6 +41,10 @@ public class WindowOutputBuffer
     // of commands, not regular, visual text into window
     private static final List<String> cmdCharacters;
     
+    // list of regex expressions of all valid (possible to be executed)
+    // ESC-commands
+    private static final List<String> validCommands;
+    
     
     static {
         WINDOW_AUTOFLUSH_MODE = true;
@@ -48,21 +54,56 @@ public class WindowOutputBuffer
         MIN_WINDOW_BUFFER_SIZE = 1;
         MAX_WINDOW_BUFFER_SIZE = 1000;
         //
-        // All characters we assume can be only in command, not regular text:
-        // (will be filled in descendants)
+        // All these characters we assume can be only in command, not regular text:
         cmdCharacters = new ArrayList<>();
-        cmdCharacters.add(ConUt.ESC);// most important, must be checked first for 'break'
-        cmdCharacters.add(ConUt.CR);
-        cmdCharacters.add(ConUt.BS);
-        cmdCharacters.add(ConUt.LF);
-        cmdCharacters.add(ConUt.HT);
-        cmdCharacters.add(ConUt.VT);
+        initCmdCharacters();
+        //
+        // All these escape sequences are valid to be executed in the buffer:
+        validCommands = new ArrayList<>();
+        initValidCommandsRegex();
+    }
+    
+    /**
+     * Initialize symbols we consider as special (commands).
+     * 'ESC' is added directly at first - to be checked the first too.
+     * So, ignore 'ESC' from direct array from ConUt.
+     */
+    private static void initCmdCharacters() {
+        cmdCharacters.add(ConUt.ESC);// first direct adding of primary 'ESC'
+        //
+        char[] specialChars = ConUt.getSpecialAsciiCodes();
+        for ( char curSpecChar : specialChars ) {
+            String curSpecCharStr = String.valueOf(curSpecChar);
+            // ignore 'ESC' added first directly:
+            if ( curSpecCharStr.equals(ConUt.ESC) ) continue;
+            //
+            cmdCharacters.add(curSpecCharStr);
+        }
+    }
+    
+    /**
+     * Write down all regex expressions to cover all escape sequences
+     * we consider to be valid and executable.
+     */
+    private static void initValidCommandsRegex() {
+        // all lines must start as 'ESC' + '[':
+        String[] validCmds = {
+            // all 'm'-based expressions:
+            "(([3-4]8;5;)?|([3-4]8;2;\\d+;\\d+;)?)\\d+m",
+            // clear and cursor functions:
+            "(s)|(u)|(\\?(12|25)[hl])"
+        };
+        //
+        for ( String curExpression : validCmds ) {
+            String regexToAdd = "\033\\["
+                                + curExpression;
+            validCommands.add(regexToAdd);
+        }
     }
     
     
-    // Counted length of only regular visual characters.
-    // Here and next we consider 'send...'-methods to be invisible.
-    private int bufferVisualLength;
+    ////////////////////////////////
+    
     
     // list of everything which wants to react out changes
     private List<WinBufEventListener> eventListeners;
@@ -235,15 +276,214 @@ public class WindowOutputBuffer
             return isCmdStatus;
         }
         //
+        isCmdStatus = this.hasCmdChars(strToCheck);
+        //
+        return isCmdStatus;
+    }
+    
+    /**
+     * Check if the string has a special char or not.
+     * @param strToCheck line we must to analyze
+     * @return 'true' when has special symbols ('cmdCharacters'), or 'false'
+     */
+    private boolean hasCmdChars(final String strToCheck) {
         for ( int i = 0; i < WindowOutputBuffer.cmdCharacters.size(); i++ ) {
             String currentCharCheck = WindowOutputBuffer.cmdCharacters.get(i);
             if ( strToCheck.contains(currentCharCheck) ) {
-                isCmdStatus = true;
-                break;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    
+    /**
+     * Check if the string is any ESC-sequence or not.
+     * @param strToCheck line we must to analyze
+     * @return 'true' when is alone ESC-sequence, or 'false'
+     */
+    private boolean isSingleEscCommand(final String strToCheck) {
+        Pattern pattern;
+        Matcher matcher;
+        //
+        for ( String curValidCmd : WindowOutputBuffer.validCommands ) {
+            // here we need only whole sequences from start to end of line,
+            // so we will add '^' and '$':
+            final String patternStr = "(^" + curValidCmd + "$)";
+            pattern = Pattern.compile(patternStr);
+            matcher = pattern.matcher(strToCheck);
+            if ( matcher.find() ) {
+                // 'strToCheck'-string match one of single ESC-command
+                return true;
             }
         }
         //
-        return isCmdStatus;
+        // here the match did not occur:
+        return false;
+    }
+    
+    
+    
+    // banned
+    @Override
+    public void add(final String newCharsToBuffer) throws IllegalCallerException {
+        String excMsg = "Does not allow to use method 'add', use 'addToWinBuf' instead.";
+        throw new IllegalCallerException(excMsg);
+    }
+    
+    /**
+     * Real, hidden method to add something to the buffer.
+     * @param strToBuf what we are going to add to buffer
+     * @param iteration recursion controller
+     */
+    private void addToWinBuf(final String strToBuf, final int iteration) {
+        if ( !this.isCmdStr(strToBuf) ) {
+            // easy way - no commands in line: add and exit
+            super.add(strToBuf);
+            return;
+        }
+        //
+        this.addCmdToWinBuf(strToBuf, iteration);
+    }
+    
+    /**
+     * Universal (text and commands) add-method for window buffer.
+     * Directly add regular text, or use special functions
+     * to add text with commands (special symbols, escape sequences).
+     * Can be slow for long command combinations.
+     * Is used instead of 'add'.
+     * @param strToBuf what we are going to add to buffer
+     */
+    public void addToWinBuf(final String strToBuf) {
+        this.addToWinBuf(strToBuf, 0);
+    }
+    
+    
+    /**
+     * Full 'Add'-method, only for a command.
+     * Has inner iterations controller.
+     * @param strToBuf string with a command
+     * @param iteration recursion counter
+     * @throws IllegalArgumentException when not command is tried to be added
+     * @throws Runtime­Exception in case we got infinite parsing loop
+     */
+    public void addCmdToWinBuf(final String strToBuf, final int iteration)
+                        throws IllegalArgumentException, Runtime­Exception {
+        final int MAX_RECUSION_CNT = 100;
+        if ( iteration > MAX_RECUSION_CNT ) {
+            String excMsg = "Cannot add command (escape sequence), fall into infinite loop";
+            throw new Runtime­Exception(excMsg);
+        }
+        //
+        if ( !this.isCmdStr(strToBuf) ) {
+            String excMsg = "Command expected for buffer, got '" + strToBuf + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        // Prevent blocked special chars/ANSI escape sequences to be added/executed
+        
+        // ... < !!!! >
+        
+        //
+        // Here we have at least one command in line (spec. char, escape sequence).
+        //
+        // Rapid processing for one-symbol cmd-string (special char):
+        if ( strToBuf.length() <= 1 ) {
+            this.addCmdWhole(strToBuf);
+            return;
+        }
+        //
+        // Rapid processing for single escape sequence
+        if ( this.isSingleEscCommand(strToBuf) ) {
+            this.addCmdWhole(strToBuf);
+            return;
+        }
+        //
+        // Get a set of strings we want to add sequentially.
+        // Here we make a guarantee each command will be sent separately.
+        List<String> toAdd = this.getStringsToAddFromCmdStr(strToBuf);
+        for ( String currentStrToAdd : toAdd ) {
+            this.addToWinBuf(currentStrToAdd);
+        }
+    }
+    
+    /**
+     * Default short version without iterations.
+     * @param strToBuf 
+     */
+    public void addCmdToWinBuf(final String strToBuf) {
+        this.addCmdToWinBuf(strToBuf, 0);
+    }
+    
+    
+    /**
+     * Make some string with special chars and commands to be a list of separate strings
+     * with regular text and commands each.
+     * "txt1\ntxt2\ntxt3\e[5mtxt4" => { "txt1", "\n", "txt2", "\n", "txt3", "\e[5m", "txt4" }
+     * Important! Is not secure, '' must be checked before that doesn't have invalid commands.
+     * @param strToParse string with a command
+     * @return list of strings, each has a command or a block of regular text
+     */
+    private List<String> getStringsToAddFromCmdStr(final String strToParse) {
+        List<String> strResult = new ArrayList<>();
+        int curIndex;
+        int lastAddedIndex;
+        //
+        for ( curIndex = 0, lastAddedIndex = 0; curIndex < strToParse.length(); curIndex++ ) {
+            char curChar = strToParse.charAt(curIndex);
+            // if current symbol is printable - we are not interested:
+            if ( ConUt.isPrintableChar(curChar) ) continue;
+            //
+            String curSymbol = String.valueOf(curChar);
+            //
+            // pass through all special chars:
+            if ( this.hasCmdChars(curSymbol) ) {
+                // met command (special char/escape sequence)
+                // add to result strings everything we passed before
+                if ( curIndex > lastAddedIndex ) {
+                    String strToAdd = strToParse.substring(lastAddedIndex, curIndex);
+                    strResult.add(strToAdd);
+                }
+                //
+                if ( curSymbol.equals(ConUt.ESC) ) {
+                    // In case we met 'ESC' work with possible escape sequence.
+                    Pattern pattern;
+                    Matcher matcher;
+                    String curSubstr = strToParse.substring(curIndex);
+                    //
+                    for ( String curValidCmd : WindowOutputBuffer.validCommands ) {
+                        pattern = Pattern.compile(curValidCmd);
+                        matcher = pattern.matcher(curSubstr);
+                        if ( matcher.find() ) {
+                            final int cmdLength = matcher.end();
+                            //
+                            String escCmdStrToAdd = curSubstr.substring(0, cmdLength);
+                            strResult.add(escCmdStrToAdd);
+                            //
+                            // 'curIndex' will be incremented next loop iteration automatically
+                            curIndex = (curIndex + cmdLength) - 1;
+                            lastAddedIndex = curIndex + 1;
+                            //
+                            break;
+                        }
+                    }
+                } else {
+                    // Any command single char except 'ESC'
+                    // must be added as separate string into the list.
+                    strResult.add(curSymbol);
+                    lastAddedIndex = curIndex + 1;
+                }
+            }
+        }
+        //
+        // Add rest part of base string if has anything:
+        if ( curIndex > lastAddedIndex ) {
+            String strToAdd = strToParse.substring(lastAddedIndex, curIndex);
+            strResult.add(strToAdd);
+        }
+        //
+        return strResult;
     }
     
     
@@ -261,7 +501,7 @@ public class WindowOutputBuffer
     
     /**
      * Special chars or escape sequence - to buffer.
-     * Only whole-adding -> This is a clone of the 'addCmdWhole'-method.
+     * Only whole-adding -> Here this is a clone of the 'addCmdWhole'-method.
      * @param newCmdCharsToBuffer
      */
     @Override
@@ -275,7 +515,7 @@ public class WindowOutputBuffer
     }
     
     /**
-     * Suppose to add common non-command visual text.
+     * Suppose to add common non-command, visual text.
      * @param wholeCharsToBuffer 
      */
     @Override
@@ -300,10 +540,25 @@ public class WindowOutputBuffer
                             wholeCmdCharsToBuffer); // our command
         //
         // second arguments is crucial (as empty string with zero-length):
-        this.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
+        super.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
         //
         this.generateEvent(WinBufEventType.ON_AFTER_CMD_SENT,
                             wholeCmdCharsToBuffer);
+    }
+    
+    
+    
+    /**
+     * Public method to erase the last symbol from the buffer.
+     * Does not slice out the string, just erasing.
+     */
+    public void deleteLastChar() {
+        final int bufLength = this.getBufferLength();
+        final int bufStrSize = this.getBufferStr().length();
+        //
+        if ( bufStrSize <= 0 ) return;// real line length is already zero
+        //
+        this.deleteFromBuffer(bufStrSize - 1, bufStrSize, bufLength);
     }
     
     
