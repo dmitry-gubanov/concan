@@ -45,6 +45,10 @@ public class WindowOutputBuffer
     // ESC-commands
     private static final List<String> validCommands;
     
+    // list of regex expressions of all banned escape sequences,
+    // special chars, and everything we want to filter.
+    private static final List<String> bannedCommands;
+    
     
     static {
         WINDOW_AUTOFLUSH_MODE = true;
@@ -61,6 +65,10 @@ public class WindowOutputBuffer
         // All these escape sequences are valid to be executed in the buffer:
         validCommands = new ArrayList<>();
         initValidCommandsRegex();
+        //
+        // All we will filter (and block) before it is added to the buffer.
+        bannedCommands = new ArrayList<>();
+        initBannedCommandsRegex();
     }
     
     /**
@@ -86,19 +94,43 @@ public class WindowOutputBuffer
      * we consider to be valid and executable.
      */
     private static void initValidCommandsRegex() {
-        // all lines must start as 'ESC' + '[':
         String[] validCmds = {
             // all 'm'-based expressions:
+            // (colors, styles...)
             "(([3-4]8;5;)?|([3-4]8;2;\\d+;\\d+;)?)\\d+m",
             // clear and cursor functions:
             "(s)|(u)|(\\?(12|25)[hl])"
         };
         //
         for ( String curExpression : validCmds ) {
+            // all lines must start as 'ESC' + '[':
             String regexToAdd = "\033\\["
                                 + curExpression;
             validCommands.add(regexToAdd);
         }
+    }
+    
+    /**
+     * Write down all regex expressions to cover everything which must
+     * break the buffer operation: invalid characters, escape sequences, and
+     * all we want not to be in the buffer.
+     */
+    private static void initBannedCommandsRegex() {
+        String[] bannedCmds = {
+            // all cursor control commands
+            "(\\d+;\\d+)?[A-H]",
+            "6n",
+            "[012][JK]"
+        };
+        //
+        for ( String curExpression : bannedCmds ) {
+            // all banned commands must start with 'ESC' + '[':
+            String regexToAdd = "\033\\["
+                                + curExpression;
+            bannedCommands.add(regexToAdd);
+        }
+        // add here banned characters if necessary
+        // ...
     }
     
     
@@ -300,7 +332,7 @@ public class WindowOutputBuffer
     
     /**
      * Check if the string is any ESC-sequence or not.
-     * @param strToCheck line we must to analyze
+     * @param strToCheck line we must analyze
      * @return 'true' when is alone ESC-sequence, or 'false'
      */
     private boolean isSingleEscCommand(final String strToCheck) {
@@ -308,18 +340,38 @@ public class WindowOutputBuffer
         Matcher matcher;
         //
         for ( String curValidCmd : WindowOutputBuffer.validCommands ) {
-            // here we need only whole sequences from start to end of line,
-            // so we will add '^' and '$':
-            final String patternStr = "(^" + curValidCmd + "$)";
-            pattern = Pattern.compile(patternStr);
+            // Here we need only whole sequences from start to end of line,
+            // so we will use 'matches()'.
+            pattern = Pattern.compile(curValidCmd);
             matcher = pattern.matcher(strToCheck);
-            if ( matcher.find() ) {
-                // 'strToCheck'-string match one of single ESC-command
-                return true;
+            //
+            if ( matcher.matches() ) {
+                return true;// +
             }
         }
         //
         // here the match did not occur:
+        return false;
+    }
+    
+    /**
+     * Pass the line through the list of all the banned commands.
+     * @param strToCheck line we have to analyze
+     * @return 'true' when the line contains any restricted commands, or 'false'
+     */
+    private boolean hasBannedCmd(final String strToCheck) {
+        Pattern pattern;
+        Matcher matcher;
+        //
+        for ( String curBannedCmd : WindowOutputBuffer.bannedCommands ) {
+            pattern = Pattern.compile(curBannedCmd);
+            matcher = pattern.matcher(strToCheck);
+            if ( matcher.find() ) {
+                // cought something we consider to be banned
+                return true;// +
+            }
+        }
+        // no match -> no illegal commands
         return false;
     }
     
@@ -365,7 +417,7 @@ public class WindowOutputBuffer
      * Has inner iterations controller.
      * @param strToBuf string with a command
      * @param iteration recursion counter
-     * @throws IllegalArgumentException when not command is tried to be added
+     * @throws IllegalArgumentException when not command is tried to be added, or command is banned
      * @throws Runtime­Exception in case we got infinite parsing loop
      */
     public void addCmdToWinBuf(final String strToBuf, final int iteration)
@@ -381,10 +433,12 @@ public class WindowOutputBuffer
             throw new IllegalArgumentException(excMsg);
         }
         //
-        // Prevent blocked special chars/ANSI escape sequences to be added/executed
-        
-        // ... < !!!! >
-        
+        // Prevent blocked special chars/ANSI escape sequences to be added/executed.
+        // Here we know is some command.
+        if ( this.hasBannedCmd(strToBuf) ) {
+            String excMsg = "Command (special character or escape sequence) is banned to be added to the buffer";
+            throw new IllegalArgumentException(excMsg);
+        }
         //
         // Here we have at least one command in line (spec. char, escape sequence).
         //
