@@ -69,6 +69,10 @@ public class WindowOutputBuffer
         // All we will filter (and block) before it is added to the buffer.
         bannedCommands = new ArrayList<>();
         initBannedCommandsRegex();
+        //
+        // Check that all esc-commands from ConUt are covered with valid
+        // or non-valid lists.
+        checkCmdRegexCoverage();
     }
     
     /**
@@ -99,7 +103,7 @@ public class WindowOutputBuffer
             // (colors, styles...)
             "(([3-4]8;5;)?|([3-4]8;2;\\d+;\\d+;)?)\\d+m",
             // clear and cursor functions:
-            "(s)|(u)|(\\?(12|25)[hl])"
+            "((s)|(u)|(\\?(12|25)[hl]))"
         };
         //
         for ( String curExpression : validCmds ) {
@@ -118,7 +122,7 @@ public class WindowOutputBuffer
     private static void initBannedCommandsRegex() {
         String[] bannedCmds = {
             // all cursor control commands
-            "(\\d+;\\d+)?[A-H]",
+            "((\\d+;\\d+)?|(\\d+)?)[A-H]",
             "6n",
             "[012][JK]"
         };
@@ -131,6 +135,103 @@ public class WindowOutputBuffer
         }
         // add here banned characters if necessary
         // ...
+    }
+    
+    /**
+     * Proof that all commands from 'ConUt' are filtered as banned or legal
+     * regex lists.
+     * Is executed once at the static phase.
+     * @throws Runtime­Exception if not all esc-commands are covered
+     */
+    private static void checkCmdRegexCoverage() throws Runtime­Exception {
+        String[] allCmds = ConUt.getEscCmds();
+        List<String> allUncoveredCmds = new ArrayList<>();
+        final String defaultNmbForPlaceholder = "999";
+        //
+        for ( int i = 0; i < allCmds.length; i++ ) {
+            String currentCmdTmpl = allCmds[ i ];
+            // compose semi-real sequence - replace placeholder and add '\e' + '[':
+            currentCmdTmpl = currentCmdTmpl.replaceAll(ConUt.ESC_CMD_PARAM, defaultNmbForPlaceholder);
+            currentCmdTmpl = ConUt.ESC + ConUt.ESC_CMD_SEPARATOR + currentCmdTmpl;
+            //
+            if ( !WindowOutputBuffer.isSingleEscCommand(currentCmdTmpl)
+                    && !WindowOutputBuffer.hasBannedCmd(currentCmdTmpl) ) {
+                // command template is not an alone valid sequence,
+                // neigher is like a banned command -> is _not_ covered by regex-s
+                allUncoveredCmds.add( allCmds[ i ] );
+            }
+        }
+        //
+        if ( allUncoveredCmds.isEmpty() ) return;
+        //
+        String uncoveredList = allUncoveredCmds.toString();
+        String excMsg = "List of escape sequences is not fully covered."
+                        + " Uncovered commands are: " + uncoveredList;
+        throw new Runtime­Exception(excMsg);
+    }
+    
+    
+    
+    /**
+     * Check if the string has a special char or not.
+     * @param strToCheck line we must to analyze
+     * @return 'true' when has special symbols ('cmdCharacters'), or 'false'
+     */
+    private static boolean hasCmdChars(final String strToCheck) {
+        for ( int i = 0; i < WindowOutputBuffer.cmdCharacters.size(); i++ ) {
+            String currentCharCheck = WindowOutputBuffer.cmdCharacters.get(i);
+            if ( strToCheck.contains(currentCharCheck) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    
+    /**
+     * Check if the whole string is any ESC-sequence, or not.
+     * @param strToCheck line we must analyze
+     * @return 'true' when is alone ESC-sequence, or 'false'
+     */
+    private static boolean isSingleEscCommand(final String strToCheck) {
+        Pattern pattern;
+        Matcher matcher;
+        //
+        for ( String curValidCmd : WindowOutputBuffer.validCommands ) {
+            // Here we need only whole sequences from start to end of line,
+            // so we will use 'matches()'.
+            pattern = Pattern.compile(curValidCmd);
+            matcher = pattern.matcher(strToCheck);
+            //
+            if ( matcher.matches() ) {
+                return true;// +
+            }
+        }
+        //
+        // here the match did not occur:
+        return false;
+    }
+    
+    /**
+     * Pass the line through the list of all the banned commands.
+     * @param strToCheck line we have to analyze
+     * @return 'true' when the line contains any restricted commands, or 'false'
+     */
+    private static boolean hasBannedCmd(final String strToCheck) {
+        Pattern pattern;
+        Matcher matcher;
+        //
+        for ( String curBannedCmd : WindowOutputBuffer.bannedCommands ) {
+            pattern = Pattern.compile(curBannedCmd);
+            matcher = pattern.matcher(strToCheck);
+            if ( matcher.find() ) {
+                // cought something we consider to be banned
+                return true;// +
+            }
+        }
+        // no match -> no illegal commands
+        return false;
     }
     
     
@@ -308,71 +409,9 @@ public class WindowOutputBuffer
             return isCmdStatus;
         }
         //
-        isCmdStatus = this.hasCmdChars(strToCheck);
+        isCmdStatus = WindowOutputBuffer.hasCmdChars(strToCheck);
         //
         return isCmdStatus;
-    }
-    
-    /**
-     * Check if the string has a special char or not.
-     * @param strToCheck line we must to analyze
-     * @return 'true' when has special symbols ('cmdCharacters'), or 'false'
-     */
-    private boolean hasCmdChars(final String strToCheck) {
-        for ( int i = 0; i < WindowOutputBuffer.cmdCharacters.size(); i++ ) {
-            String currentCharCheck = WindowOutputBuffer.cmdCharacters.get(i);
-            if ( strToCheck.contains(currentCharCheck) ) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    
-    
-    /**
-     * Check if the string is any ESC-sequence or not.
-     * @param strToCheck line we must analyze
-     * @return 'true' when is alone ESC-sequence, or 'false'
-     */
-    private boolean isSingleEscCommand(final String strToCheck) {
-        Pattern pattern;
-        Matcher matcher;
-        //
-        for ( String curValidCmd : WindowOutputBuffer.validCommands ) {
-            // Here we need only whole sequences from start to end of line,
-            // so we will use 'matches()'.
-            pattern = Pattern.compile(curValidCmd);
-            matcher = pattern.matcher(strToCheck);
-            //
-            if ( matcher.matches() ) {
-                return true;// +
-            }
-        }
-        //
-        // here the match did not occur:
-        return false;
-    }
-    
-    /**
-     * Pass the line through the list of all the banned commands.
-     * @param strToCheck line we have to analyze
-     * @return 'true' when the line contains any restricted commands, or 'false'
-     */
-    private boolean hasBannedCmd(final String strToCheck) {
-        Pattern pattern;
-        Matcher matcher;
-        //
-        for ( String curBannedCmd : WindowOutputBuffer.bannedCommands ) {
-            pattern = Pattern.compile(curBannedCmd);
-            matcher = pattern.matcher(strToCheck);
-            if ( matcher.find() ) {
-                // cought something we consider to be banned
-                return true;// +
-            }
-        }
-        // no match -> no illegal commands
-        return false;
     }
     
     
@@ -435,7 +474,7 @@ public class WindowOutputBuffer
         //
         // Prevent blocked special chars/ANSI escape sequences to be added/executed.
         // Here we know is some command.
-        if ( this.hasBannedCmd(strToBuf) ) {
+        if ( WindowOutputBuffer.hasBannedCmd(strToBuf) ) {
             String excMsg = "Command (special character or escape sequence) is banned to be added to the buffer";
             throw new IllegalArgumentException(excMsg);
         }
@@ -449,7 +488,7 @@ public class WindowOutputBuffer
         }
         //
         // Rapid processing for single escape sequence
-        if ( this.isSingleEscCommand(strToBuf) ) {
+        if ( WindowOutputBuffer.isSingleEscCommand(strToBuf) ) {
             this.addCmdWhole(strToBuf);
             return;
         }
@@ -492,7 +531,7 @@ public class WindowOutputBuffer
             String curSymbol = String.valueOf(curChar);
             //
             // pass through all special chars:
-            if ( this.hasCmdChars(curSymbol) ) {
+            if ( WindowOutputBuffer.hasCmdChars(curSymbol) ) {
                 // met command (special char/escape sequence)
                 // add to result strings everything we passed before
                 if ( curIndex > lastAddedIndex ) {
