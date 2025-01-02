@@ -404,7 +404,7 @@ public class WindowOutputBuffer
         // Here we make a guarantee each command will be sent separately.
         List<String> toAdd = this.getStringsToAddFromCmdStr(strToBuf);
         for ( String currentStrToAdd : toAdd ) {
-            this.addToWinBuf(currentStrToAdd);
+            this.addToWinBuf(currentStrToAdd, iteration);
         }
     }
     
