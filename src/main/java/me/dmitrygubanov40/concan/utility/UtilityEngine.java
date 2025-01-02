@@ -17,8 +17,8 @@ class UtilityEngine
 {
     
     // 'Glue' for Esc-symbol and the command (sequence) itself.
-    private final static String ESC_CMD_SEPARATOR;
-    private final static String ESC_CMD_PARAM;// extra argument in command replacement
+    public final static String ESC_CMD_SEPARATOR;
+    public final static String ESC_CMD_PARAM;// extra argument in command replacement
     
     // ASCII-codes table
     private final static HashMap<String, Character> charAsciiCodes;
@@ -201,7 +201,7 @@ class UtilityEngine
     
     
     /**
-     * @return array of characters considered as commands (special chars).
+     * @return array of characters considered as commands (special chars)
      */
     public static char[] getSpecialAsciiCodes() {
         final int codesNumber = UtilityEngine.charAsciiCodes.size();
@@ -214,6 +214,22 @@ class UtilityEngine
         }
         //
         return codes;
+    }
+    
+    /**
+     * @return array of strings considered as commands (escape sequences)
+     */
+    public static String[] getEscCmds() {
+        final int cmdNumber = UtilityEngine.escCommands.size();
+        String[] cmds = new String[ cmdNumber ];
+        //
+        int i = 0;
+        for ( String curCmdTemplateStr : UtilityEngine.escCommands.values() ) {
+            cmds[ i ] = curCmdTemplateStr;
+            i++;
+        }
+        //
+        return cmds;
     }
     
     
