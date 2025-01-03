@@ -278,6 +278,11 @@ public class WindowOutputBuffer
         //
         for ( WinBufEventListener currentListener : this.eventListeners ) {
             currentListener.onWindowOutputBufferEvent(event);
+            //
+            // some listener has changed the status to stop prolongation:
+            if ( WinBufEventStatus.WB_EVENT_ABORT == event.getEventStatus() ) {
+                break;
+            }
         }
     }
     
@@ -295,8 +300,9 @@ public class WindowOutputBuffer
      * @param genEventType event type from 'WinBufEventType'
      * @param genEventFlags any states or conditions in integer
      * @param genEventText extra free text in event
+     * @return the event we have generated
      */
-    public void generateEvent(final WinBufEventType genEventType,
+    public WinBufEvent generateEvent(final WinBufEventType genEventType,
                                 final int genEventFlags,
                                 final String genEventText) {
         WinBufEvent genEvent = new WinBufEvent(this,
@@ -304,17 +310,19 @@ public class WindowOutputBuffer
                                                 genEventFlags,
                                                 genEventText);
         this.notifyEventListeners(genEvent);
+        //
+        return genEvent;
     }
-    public void generateEvent(final WinBufEventType genEventType,
+    public WinBufEvent generateEvent(final WinBufEventType genEventType,
                                 final int genEventFlags) {
-        this.generateEvent(genEventType, genEventFlags, "");
+        return this.generateEvent(genEventType, genEventFlags, "");
     }
-    public void generateEvent(final WinBufEventType genEventType,
+    public WinBufEvent generateEvent(final WinBufEventType genEventType,
                                 final String genEventText) {
-        this.generateEvent(genEventType, 0, genEventText);
+        return this.generateEvent(genEventType, 0, genEventText);
     }
-    public void generateEvent(final WinBufEventType genEventType) {
-        this.generateEvent(genEventType, 0, "");
+    public WinBufEvent generateEvent(final WinBufEventType genEventType) {
+        return this.generateEvent(genEventType, 0, "");
     }
     
     
@@ -343,14 +351,21 @@ public class WindowOutputBuffer
      * Send pre-event, do the flush, clear visual length, and send post-event.
      */
     @Override
-    public void flush() {
+    public synchronized void flush() {
         final int keptBeforeFlushLength = this.getBufferLength();
         final String keptBeforeFlushStr = this.getBufferStr();
         //
         // know via event everything are ready to output
-        this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH,
-                            keptBeforeFlushLength,  // _our_ data about line length (can be zero for commands)
-                            keptBeforeFlushStr);    // current buffer string line
+        WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_FLUSH,
+                                                        keptBeforeFlushLength,  // _our_ data about line length
+                                                        keptBeforeFlushStr);    // current buffer string line
+        //
+        if ( WinBufEventStatus.WB_EVENT_OK != beforeEvent.getEventStatus() ) {
+            // after "before"-actions event was stoped in some way
+            // the buffer will be cleared without output
+            this.clearBuffer();
+            return;
+        }
         //
         // store buffer's string and length after 'before'-event
         final int keptBehindBeforeFlushLength = this.getBufferLength();
@@ -359,14 +374,16 @@ public class WindowOutputBuffer
         super.flush();
         //
         // 'after'-events recieves buffer data after 'before'-event
-        this.generateEvent(WinBufEventType.ON_AFTER_FLUSH, keptBehindBeforeFlushLength, keptBehindBeforeFlushStr);
+        this.generateEvent(WinBufEventType.ON_AFTER_FLUSH,
+                            keptBehindBeforeFlushLength,
+                            keptBehindBeforeFlushStr);
     }
     
     /**
      * Send pre-event, do auto-flush, and send post-event.
      */
     @Override
-    protected void autoflush() {
+    protected synchronized void autoflush() {
         final String keptStr = this.getBufferStr();
         final int calculatedKeptStrLength;
         if ( this.isCmdStr(keptStr) ) {
@@ -376,9 +393,16 @@ public class WindowOutputBuffer
         }
         // So, if 'calculatedKeptStrLength' is zero we got line with some sort of command.
         //
-        this.generateEvent(WinBufEventType.ON_BEFORE_AUTOFLUSH,
-                            calculatedKeptStrLength,    // length of string which we want to consider
-                            keptStr);                   // current buffer string line
+        WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_AUTOFLUSH,
+                                                        calculatedKeptStrLength,    // length we want to consider
+                                                        keptStr);                   // current buffer string line
+        //
+        if ( WinBufEventStatus.WB_EVENT_OK != beforeEvent.getEventStatus() ) {
+            // after "before"-actions event was stoped in some way
+            // the buffer will be cleared without output
+            this.clearBuffer();
+            return;
+        }
         //
         // store buffer's string and length after 'before'-event
         final int keptBehindBeforeAutoflushLength = this.getBufferLength();
@@ -627,10 +651,15 @@ public class WindowOutputBuffer
      * @param wholeCmdCharsToBuffer 
      */
     @Override
-    protected void addCmdWhole(final String wholeCmdCharsToBuffer) {
+    protected synchronized void addCmdWhole(final String wholeCmdCharsToBuffer) {
+        WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_CMD_SENT,
+                                                        wholeCmdCharsToBuffer); // our command
         //
-        this.generateEvent(WinBufEventType.ON_BEFORE_CMD_SENT,
-                            wholeCmdCharsToBuffer); // our command
+        if ( WinBufEventStatus.WB_EVENT_OK != beforeEvent.getEventStatus() ) {
+            // after "before"-actions event was stoped in some way
+            // just do not add a command
+            return;
+        }
         //
         // second arguments is crucial (as empty string with zero-length):
         super.doAddWhole(wholeCmdCharsToBuffer, WINDOW_ANY_CMD_LENGTH);
