@@ -91,7 +91,7 @@ public class ConDraw
      * Basic drawer of any primitive on console.
      * Temporary switches cursor, draws,
      * and returns cursor with all previous settings.
-     * Avoiding console borders, i.e. do not move new line when we have met end of console.!!!ПРОВЕРИТЬ ЧТОБ НЕ ЛЕЗ ЗА КРАЯ ТЕРМИНРАЛА
+     * Avoiding console borders, i.e. do not move new line when we have met end of console.
      * Use for all other drawings, which must prepare only coordinates.
      * @param coords all console positions we should paint
      * @param fill parameters of filling
