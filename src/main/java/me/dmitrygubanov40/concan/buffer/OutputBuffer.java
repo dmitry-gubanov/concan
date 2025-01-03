@@ -136,7 +136,7 @@ public class OutputBuffer
      * Information may be lost, do flush if necessary.
      * @throws NullPointerException in case buffer was not initialized
      */
-    private void clearBuffer() throws NullPointerException {
+    protected void clearBuffer() throws NullPointerException {
         if ( null == this.buffer ) {
             String excMsg = "Cannot clear not initialized buffer";
             throw new NullPointerException(excMsg);
