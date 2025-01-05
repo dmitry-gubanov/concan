@@ -14,7 +14,12 @@ public enum WinBufEventType
     ON_AFTER_AUTOFLUSH      ("onAfterAutoflush"),
     //
     ON_BEFORE_CMD_SENT      ("onBeforeCmdSent"),
-    ON_AFTER_CMD_SENT       ("onAfterCmdSent");
+    ON_AFTER_CMD_SENT       ("onAfterCmdSent"),
+    //
+    ON_BEFORE_OUTPUT_CHAR   ("onBeforeOutputChar"),
+    ON_AFTER_OUTPUT_CHAR    ("onAfterOutputChar"),
+    ON_BEFORE_OUTPUT_CMD    ("onBeforeOutputCmd"),
+    ON_AFTER_OUTPUT_CMD     ("onAfterOutputCmd");
     
     ////////////////////////////
     
