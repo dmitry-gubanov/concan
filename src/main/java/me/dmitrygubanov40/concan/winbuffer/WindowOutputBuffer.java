@@ -685,4 +685,71 @@ public class WindowOutputBuffer
     
     
     
+    /**
+     * Output the line into terminal's console.
+     * Switcher of output approach for regular text and commands.
+     * @param outputStr final sting to place into console
+     */
+    @Override
+    protected void output(final String outputStr) {
+        if ( this.isCmdStr(outputStr) ) {
+            // command (special char or escape sequence) is on output
+            this.outputCmdText(outputStr);
+            return;
+        }
+        //
+        // regular text is ready to be output
+        this.outputText(outputStr);
+    }
+    
+    /**
+     * Output regular text into terminal's console.
+     * It is crucial to output the symbols into correct terminal's area,
+     * so we put characters symbol-by-symbol, generating events at each of them.
+     * @param outputStr final sting to place into console
+     */
+    private void outputText(final String outputStr) {
+        char[] outputChars = outputStr.toCharArray();
+        for ( int i = 0; i < outputChars.length; i++ ) {
+            String currentOutputSymbol = String.valueOf(outputChars[ i ]);
+            //
+            WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_OUTPUT_CHAR,
+                                                            currentOutputSymbol);
+            if ( WinBufEventStatus.WB_EVENT_ABORT == beforeEvent.getEventStatus() ) {
+                // event's callback said we must stop
+                return;
+            }
+            if ( WinBufEventStatus.WB_EVENT_IGNORE == beforeEvent.getEventStatus() ) {
+                // event's callback blocked output
+                continue;
+            }
+            //
+            super.output(currentOutputSymbol);
+            //
+            this.generateEvent(WinBufEventType.ON_AFTER_OUTPUT_CHAR,
+                                currentOutputSymbol);
+        }
+    }
+    
+    /**
+     * Output command (special char/escape sequence) into terminal's console.
+     * Put it at once, only one event pair is generated.
+     * @param outputStr final sting to place into console
+     */
+    private void outputCmdText(final String outputCmdStr) {
+        WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_OUTPUT_CMD,
+                                                        outputCmdStr);
+        if ( WinBufEventStatus.WB_EVENT_OK != beforeEvent.getEventStatus() ) {
+            // stop adding this command
+            return;
+        }
+        //
+        super.output(outputCmdStr);
+        //
+        this.generateEvent(WinBufEventType.ON_AFTER_OUTPUT_CMD,
+                            outputCmdStr);
+    }
+    
+    
+    
 }
