@@ -711,9 +711,11 @@ public class WindowOutputBuffer
     private void outputText(final String outputStr) {
         char[] outputChars = outputStr.toCharArray();
         for ( int i = 0; i < outputChars.length; i++ ) {
-            String currentOutputSymbol = String.valueOf(outputChars[ i ]);
+            final String currentOutputSymbol = String.valueOf(outputChars[ i ]);
+            final int currentOutputSymbolLength = currentOutputSymbol.length();
             //
             WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_OUTPUT_CHAR,
+                                                            currentOutputSymbolLength,
                                                             currentOutputSymbol);
             if ( WinBufEventStatus.WB_EVENT_ABORT == beforeEvent.getEventStatus() ) {
                 // event's callback said we must stop
@@ -727,6 +729,7 @@ public class WindowOutputBuffer
             super.output(currentOutputSymbol);
             //
             this.generateEvent(WinBufEventType.ON_AFTER_OUTPUT_CHAR,
+                                currentOutputSymbolLength,
                                 currentOutputSymbol);
         }
     }
@@ -738,6 +741,7 @@ public class WindowOutputBuffer
      */
     private void outputCmdText(final String outputCmdStr) {
         WinBufEvent beforeEvent = this.generateEvent(WinBufEventType.ON_BEFORE_OUTPUT_CMD,
+                                                        WINDOW_ANY_CMD_LENGTH,
                                                         outputCmdStr);
         if ( WinBufEventStatus.WB_EVENT_OK != beforeEvent.getEventStatus() ) {
             // stop adding this command
@@ -747,6 +751,7 @@ public class WindowOutputBuffer
         super.output(outputCmdStr);
         //
         this.generateEvent(WinBufEventType.ON_AFTER_OUTPUT_CMD,
+                            WINDOW_ANY_CMD_LENGTH,
                             outputCmdStr);
     }
     
