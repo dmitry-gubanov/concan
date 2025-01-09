@@ -14,16 +14,6 @@ import me.dmitrygubanov40.concan.winbuffer.*;
 public class ConWinOut implements WinBufEventListener
 {
     
-    // tabulation column size
-    private final static int TAB_SIZE;
-    
-    
-    static {
-        TAB_SIZE = 4;
-    }
-    
-    /////////////////////////////////
-    
     // console manipulation helper
     // (no window's buffer connection)
     private final ConUt consoleTool;
@@ -45,6 +35,9 @@ public class ConWinOut implements WinBufEventListener
     // maximum in coordinates terminal
     // allows us to put chars
     private ConCord terminalMaxCoords;
+    
+    // special chars manipulator helper (for console)
+    private ConWinOutSpecChars specialCharProcessor;
     
     
     ////////////
@@ -73,6 +66,7 @@ public class ConWinOut implements WinBufEventListener
         this.zoneHeight = setHeight;
         //
         this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
+        this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
     }
     
     /**
@@ -209,7 +203,9 @@ public class ConWinOut implements WinBufEventListener
             if ( sliceLength > 0 ) {
                 eventBuffer.sliceOut(sliceLength);
             }
-            this.setNewLine();
+            //
+            this.goNewLine();
+            //
         }
     }
     
@@ -219,7 +215,6 @@ public class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
     }
     */
-    
     
     
     /* do not need now
@@ -235,7 +230,6 @@ public class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
     }
     */
-    
     
     
     /**
@@ -282,6 +276,7 @@ public class ConWinOut implements WinBufEventListener
     ////////////////////////////
     
     
+    
     /**
      * Call the zone to add this string to output zone.
      * @param str text line we will add to the zone
@@ -305,20 +300,6 @@ public class ConWinOut implements WinBufEventListener
     }
     
     /**
-     * Move cursor to the position, where cursor must be in the zone
-     * for the output.
-     */
-    private void takeTerminalCursorPosition() {
-        ConCord curTerminalPos = this.getTerminalZonePos();
-        this.consoleTool.sendGoto(curTerminalPos);
-    }
-    
-    
-     
-    ///////////////////////////////
-    // special characters:
-    
-    /**
      * Get actual coordinates in terminal's console.
      * @return point in the terminal
      */
@@ -328,77 +309,21 @@ public class ConWinOut implements WinBufEventListener
     }
     
     /**
-     * Move cursor on new line of the zone.
-     * Output to the line is finished.
-     * Calculate coordinates, does not move cursor directly.
-     * @param xToSet where cursor will appear via X-axis
+     * Move cursor to the position, where cursor must be in the zone
+     * for the output.
      */
-    private void setNewLine(final int xToSet) {
-        this.zoneCursorPos.setX(xToSet);
-        this.zoneCursorPos.setY(this.zoneCursorPos.getY() + 1);
-    }
-    private void setNewLine() {
-        this.setNewLine(0);
+    private void takeTerminalCursorPosition() {
+        ConCord curTerminalPos = this.getTerminalZonePos();
+        this.consoleTool.sendGoto(curTerminalPos);
     }
     
     /**
-     * Move one char back while we are in the zone.
+     * Apply 'technical' movement of cursor to the new line.
+     * Uses the same algorithm as 'LF' character, but is open to manipulation
+     * in base class.
      */
-    private void goBackspace(final int backSteps) {
-        int curX = this.zoneCursorPos.getX();
-        final int xToSet = ((curX - backSteps) > 0)
-                                ? (curX - backSteps)
-                                : 0;
-        this.zoneCursorPos.setX(xToSet);
-    }
-    private void goBackspace() {
-        this.goBackspace(1);
-    }
-    
-    /**
-     * Move cursor right on tabulation size in chars, while it is
-     * not end of the zone.
-     */
-    private void addTab() {
-        final int curX = this.zoneCursorPos.getX();
-        int newX = curX;// will set it
-        // how many times TAB can be placed in the zone:
-        final int stepsNmb = this.zoneWidth / ConWinOut.TAB_SIZE;
-        //
-        for ( int j = 1; j <= stepsNmb; j++ ) {
-            final int curTabX = j * ConWinOut.TAB_SIZE;
-            if ( curTabX <= this.zoneWidth
-                    && curTabX > curX ) {
-                newX = curTabX;
-                break;
-            }
-        }
-        //
-        this.zoneCursorPos.setX(newX);
-    }
-    
-    /**
-     * Produce PC-speaker sound.
-     */
-    private void doBeep() {
-        ConUt.beep();
-    }
-    
-    /**
-     * Move cursor to next line, but keep current horizontal position.
-     * Does nothing at the line's edges.
-     */
-    private void addVerticalTab() {
-        final int curX = this.zoneCursorPos.getX();
-        if ( curX > 0 && curX < this.zoneWidth ) this.setNewLine(curX);
-    }
-    
-    /**
-     * Move cursor to the beginning of current line.
-     */
-    private void goLineStart() {
-        final int curX = this.zoneCursorPos.getX();
-        this.goBackspace(curX);
+    private void goNewLine() {
+        this.specialCharProcessor.callNewLine();
     }
     
     
@@ -409,58 +334,30 @@ public class ConWinOut implements WinBufEventListener
      * Only for number of special ASCII symbols.
      * @param cmdChar special character we got
      * @param buf operated zone's buffer
-     * @throws IllegalArgumentException it is not a 'char'
+     * @throws RuntimeException when character processing failed
      */
     private void processSpecialChar(final String cmdChar,
                                     final WindowOutputBuffer buf)
-                        throws IllegalArgumentException {
-        if ( cmdChar.length() != 1 ) {
-            String excMsg = "Incorrect length of special ASCII character: '"
-                                + cmdChar.length() + "'";
-            throw new IllegalArgumentException(excMsg);
-        }
-        if ( cmdChar.equals(ConUt.ESC) ) return;// 'ESC' is not processed by the method
+                    throws RuntimeException {
+        // 'ESC' is never processed by the method:
+        if ( cmdChar.equals(ConUt.ESC) ) return;
         //
         // delete just added single character
         buf.deleteLastChar();
         //
-        // '\n':
-        if ( cmdChar.equals(ConUt.LF) ) {
-            // just new line
-            this.setNewLine();
-        }
-        // '\b':
-        if ( cmdChar.equals(ConUt.BS) ) {
-            // just one char back if possible
-            this.goBackspace();
-        }
-        // '\t':
-        if ( cmdChar.equals(ConUt.HT) ) {
-            // add standart margin if zone allows
-            this.addTab();
-        }
-        // 0x07 - beep ('\a'):
-        if ( cmdChar.equals(ConUt.BEL) ) {
-            // add standart margin if zone allows
-            this.doBeep();
-        }
-        // 0x0B - vertical tabulation
-        if ( cmdChar.equals(ConUt.VT) ) {
-            // add standart margin if zone allows
-            this.addVerticalTab();
-        }
-        // '\r':
-        if ( cmdChar.equals(ConUt.CR) ) {
-            // to the begining of the line
-            this.goLineStart();
+        try {
+            // "library" class to process the character
+            // (re-calculate coordinates, append side effects)
+            specialCharProcessor.process(cmdChar);
+        } catch ( RuntimeException charProcessExc ) {
+            String excMsg = "Failed to procces special symbol. Reason: "
+                                + charProcessExc.getMessage();
+            throw new RuntimeException(excMsg);
         }
         //
         // need 'flush' to recalculate buffer length and zone status
         buf.flush();
     }
-    
-    // end of special chars block
-    ///////////////////////////////
     
     
     
