@@ -29,7 +29,7 @@ public class ConWinOut implements WinBufEventListener
     private final ConUt consoleTool;
     
     // outout console buffer for this window
-    private WindowOutputBuffer zoneBuf;
+    private final WindowOutputBuffer zoneBuf;
     
     // start point of output zone
     private ConCord zonePosition;
@@ -41,6 +41,10 @@ public class ConWinOut implements WinBufEventListener
     // must be less than parent window
     private int zoneWidth;
     private int zoneHeight;
+    
+    // maximum in coordinates terminal
+    // allows us to put chars
+    private ConCord terminalMaxCoords;
     
     
     ////////////
@@ -67,6 +71,8 @@ public class ConWinOut implements WinBufEventListener
         //
         this.zoneWidth = setWidth;
         this.zoneHeight = setHeight;
+        //
+        this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
     }
     
     /**
@@ -95,9 +101,10 @@ public class ConWinOut implements WinBufEventListener
         return new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
     }
     
-    //////////////
     
-    // Events.
+    ////////////////////////////
+    // Events
+    ////////////////////////////
     
     /**
      * Head caller of all events.
@@ -110,9 +117,11 @@ public class ConWinOut implements WinBufEventListener
         if ( WinBufEventType.ON_BEFORE_FLUSH == eventType ) {
             this.onBeforeFlush(event);
         }
+        /* do not need now
         if ( WinBufEventType.ON_AFTER_FLUSH == eventType ) {
             this.onAfterFlush(event);
         }
+        */
         //
         /* do not need now
         if ( WinBufEventType.ON_BEFORE_AUTOFLUSH == eventType ) {
@@ -128,6 +137,19 @@ public class ConWinOut implements WinBufEventListener
         }
         if ( WinBufEventType.ON_AFTER_CMD_SENT == eventType ) {
             this.OnAfterCmdSent(event);
+        }
+        //
+        if ( WinBufEventType.ON_BEFORE_OUTPUT_CHAR == eventType ) {
+            this.onBeforeOutputChar(event);
+        }
+        if ( WinBufEventType.ON_AFTER_OUTPUT_CHAR == eventType ) {
+            this.OnAfterOutputChar(event);
+        }
+        if ( WinBufEventType.ON_BEFORE_OUTPUT_CMD == eventType ) {
+            this.OnBeforeOutputCmd(event);
+        }
+        if ( WinBufEventType.ON_AFTER_OUTPUT_CMD == eventType ) {
+            this.OnAfterOutputCmd(event);
         }
     }
     
@@ -170,8 +192,6 @@ public class ConWinOut implements WinBufEventListener
     /**
      * Reaction at the beginning of any 'flush' operation.
      * Process the case when the flushing string will overcome the possible width.
-     * After - move cursor to the proper position to output the line
-     * (rest of the line).
      * @param event 
      */
     private void onBeforeFlush(final WinBufEvent event) {
@@ -191,22 +211,14 @@ public class ConWinOut implements WinBufEventListener
             }
             this.setNewLine();
         }
-        //
-        // before output to zone must move console cursor
-        ConCord curTerminalPos = this.getTerminalZonePos();
-        this.consoleTool.sendGoto(curTerminalPos);
     }
     
-    /**
-     * Reaction after the the 'flush' (output) was done.
-     * Must recalculate current cursor position in the zone.
-     * @param event 
-     */
+    /* do not need now
     private void onAfterFlush(final WinBufEvent event) {
-        // 'ON_AFTER_FLUSH' in flag has value of length:
+        final String outStr = event.getEventText();
         final int outStrLength = event.getEventFlags();
-        this.zoneCursorPos.setX(this.zoneCursorPos.getX() + outStrLength);
     }
+    */
     
     
     
@@ -224,8 +236,50 @@ public class ConWinOut implements WinBufEventListener
     }
     */
     
-    //////////////
     
+    
+    /**
+     * Reaction at the beginning of any visual symbol putting.
+     * Have to prepare cursor position.
+     * @param event 
+     */
+    private void onBeforeOutputChar(final WinBufEvent event) {
+        // before output to zone must move console cursor
+        this.takeTerminalCursorPosition();
+    }
+    
+    /**
+     * Reaction after the character was put into console.
+     * Must recalculate current cursor position in the zone.
+     * @param event 
+     */
+    private void OnAfterOutputChar(final WinBufEvent event) {
+        final int outputLength = event.getEventFlags();
+        this.zoneCursorPos.setX(this.zoneCursorPos.getX() + outputLength);
+    }
+    
+    /**
+     * Reaction at the beginning of command output.
+     * Also, it better to prepare cursor position.
+     * @param event 
+     */
+    private void OnBeforeOutputCmd(final WinBufEvent event) {
+        this.takeTerminalCursorPosition();
+    }
+    
+    /**
+     * Reaction after the command (special char/ESC-sequence)
+     * was put into console.
+     * After command we do not need to move cursor in the zone.
+     * @param event 
+     */
+    private void OnAfterOutputCmd(final WinBufEvent event) {
+        // ...
+    }
+    
+    ////////////////////////////
+    // end of events block
+    ////////////////////////////
     
     
     /**
@@ -248,6 +302,15 @@ public class ConWinOut implements WinBufEventListener
         //
         this.zoneBuf.flush();
         //
+    }
+    
+    /**
+     * Move cursor to the position, where cursor must be in the zone
+     * for the output.
+     */
+    private void takeTerminalCursorPosition() {
+        ConCord curTerminalPos = this.getTerminalZonePos();
+        this.consoleTool.sendGoto(curTerminalPos);
     }
     
     
@@ -395,6 +458,9 @@ public class ConWinOut implements WinBufEventListener
         // need 'flush' to recalculate buffer length and zone status
         buf.flush();
     }
+    
+    // end of special chars block
+    ///////////////////////////////
     
     
     
