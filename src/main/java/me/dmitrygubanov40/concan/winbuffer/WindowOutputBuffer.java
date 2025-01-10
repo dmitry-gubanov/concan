@@ -691,7 +691,7 @@ public class WindowOutputBuffer
      * @param outputStr final sting to place into console
      */
     @Override
-    protected void output(final String outputStr) {
+    protected synchronized void output(final String outputStr) {
         if ( this.isCmdStr(outputStr) ) {
             // command (special char or escape sequence) is on output
             this.outputCmdText(outputStr);
