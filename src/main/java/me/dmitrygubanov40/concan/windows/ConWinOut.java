@@ -239,7 +239,17 @@ public class ConWinOut implements WinBufEventListener
      */
     private void onBeforeOutputChar(final WinBufEvent event) {
         // before output to zone must move console cursor
-        this.takeTerminalCursorPosition();
+        try {
+            //
+            this.takeTerminalCursorPosition();
+            //
+        } catch ( OutOfTerminalWindowException termBorderExc ) {
+            // failed to move cursor to the necessary position
+            // the symbol will not be printed into console
+            event.updateEventStatus(WinBufEventStatus.WB_EVENT_IGNORE);
+            // now will be moved somewhere in the nearest position
+            this.consoleTool.sendGoto( termBorderExc.getAllowedCoords() );
+        }
     }
     
     /**
@@ -258,7 +268,13 @@ public class ConWinOut implements WinBufEventListener
      * @param event 
      */
     private void OnBeforeOutputCmd(final WinBufEvent event) {
-        this.takeTerminalCursorPosition();
+        try {
+            this.takeTerminalCursorPosition();
+        } catch ( OutOfTerminalWindowException termBorderExc ) {
+            // event prolongations will not be stoped
+            // move cursor to the nearest char's block
+            this.consoleTool.sendGoto( termBorderExc.getAllowedCoords() );
+        }
     }
     
     /**
@@ -311,9 +327,27 @@ public class ConWinOut implements WinBufEventListener
     /**
      * Move cursor to the position, where cursor must be in the zone
      * for the output.
+     * @throws OutOfTerminalWindowException when gets out of terminal window
      */
-    private void takeTerminalCursorPosition() {
+    private void takeTerminalCursorPosition() throws OutOfTerminalWindowException {
         ConCord curTerminalPos = this.getTerminalZonePos();
+        //
+        if ( curTerminalPos.getX() > this.terminalMaxCoords.getX()
+                || curTerminalPos.getY() > this.terminalMaxCoords.getY() ) {
+            String excMsg = "Cannot move away from terminal window."
+                                + " Need to move cursor to: " + curTerminalPos
+                                + ", maximum coordinates are: " + this.terminalMaxCoords;
+            final int excX = (curTerminalPos.getX() > this.terminalMaxCoords.getX())
+                                ? this.terminalMaxCoords.getX()
+                                : curTerminalPos.getX();
+            final int excY = (curTerminalPos.getY() > this.terminalMaxCoords.getY())
+                                ? this.terminalMaxCoords.getY()
+                                : curTerminalPos.getY();
+            ConCord excCoords = new ConCord(excX, excY);
+            //
+            throw new OutOfTerminalWindowException(excMsg, excCoords);
+        }
+        //
         this.consoleTool.sendGoto(curTerminalPos);
     }
     
