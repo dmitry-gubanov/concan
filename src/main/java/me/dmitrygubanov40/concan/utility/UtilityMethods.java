@@ -20,12 +20,18 @@ public class UtilityMethods extends UtilityEscCommands
     // try this point to get width and height of terminal
     private final static ConCord CONSOLE_MAX_SIZE;
     
+    // default text console size (in symbols)
+    // used when 'Console()' is null
+    private final static ConCord CONSOLE_DEFAULT_SIZE;
+    
     static {
         CONSOLE_REPORT_START_CHAR = "[";
         CONSOLE_REPORT_SEPARATOR_CHAR = ";";
         CONSOLE_REPORT_END_CHAR = "R";
         //
         CONSOLE_MAX_SIZE = new ConCord(1000, 1000);
+        //
+        CONSOLE_DEFAULT_SIZE = new ConCord(80, 25);
     }
     
     //////////
@@ -179,6 +185,11 @@ public class UtilityMethods extends UtilityEscCommands
      * @return (maxX, maxY) in 'ConCord'
      */
     public static ConCord getTerminalMaxCoord() {
+        if ( null == System.console() ) {
+            // when failed tp access java console - give default console size
+            return CONSOLE_DEFAULT_SIZE;
+        }
+        //
         ConUt conTool = new ConUt();
         conTool.sendGoto(CONSOLE_MAX_SIZE);
         ConCord consoleMaxCoord = UtilityMethods.getCursorPosition();
