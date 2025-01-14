@@ -61,7 +61,9 @@ class UtilityEngine
      * To fill the ASCII-codes table.
      */
     private static void initCharAsciiCodes() {
-        UtilityEngine.charAsciiCodes.put("ETX", (char) 0x03);// end of text
+        UtilityEngine.charAsciiCodes.put("STX", (char) 0x02);// start of text block
+        UtilityEngine.charAsciiCodes.put("ETX", (char) 0x03);// end of text block
+        //
         UtilityEngine.charAsciiCodes.put("BEL", (char) 0x07);// (if supported) terminal bell
         UtilityEngine.charAsciiCodes.put("BS",  (char) 0x08);// '\b', backspace
         UtilityEngine.charAsciiCodes.put("HT",  (char) 0x09);// '\t', horizontal tab
