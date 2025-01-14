@@ -19,6 +19,9 @@ class UtilityAscii extends UtilityEngine
     public static final String VT;
     public static final String ESC;
     public static final String BEL;
+    //
+    public static final String STX;
+    public static final String ETX;
     
     
     static {
@@ -29,6 +32,9 @@ class UtilityAscii extends UtilityEngine
         VT  = UtilityEngine.getStrCharByName("VT");
         ESC = UtilityEngine.getStrCharByName("ESC");
         BEL = UtilityEngine.getStrCharByName("BEL");
+        //
+        STX = UtilityEngine.getStrCharByName("STX");
+        ETX = UtilityEngine.getStrCharByName("ETX");
     }
     
     
