@@ -1,5 +1,6 @@
 package me.dmitrygubanov40.concan.windows;
 
+
 import me.dmitrygubanov40.concan.utility.ConCord;
 import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.winbuffer.*;
@@ -39,6 +40,9 @@ public class ConWinOut implements WinBufEventListener
     // special chars manipulator helper (for console)
     private ConWinOutSpecChars specialCharProcessor;
     
+    // 'archive' of data has been output
+    private ConWinOutStorage storage;
+    
     
     ////////////
     
@@ -64,6 +68,8 @@ public class ConWinOut implements WinBufEventListener
         //
         this.zoneWidth = setWidth;
         this.zoneHeight = setHeight;
+        //
+        this.storage = new ConWinOutStorage(this.zoneWidth);
         //
         this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
@@ -172,13 +178,16 @@ public class ConWinOut implements WinBufEventListener
         final String outStr = event.getEventText();
         //
         if ( outStr.length() == 1 ) {
-            // case of single special character - 
+            // case of single special character,
             // synchronize de-facto behavior and console condition
             this.processSpecialChar(outStr, eventBuffer);
         } else if ( outStr.length() > 1 ) {
             // case of escape sequence - immediately flush it to be shown
             eventBuffer.flush();
         }
+        // Keep command output for history straight after it was added:
+        // 'flush()' or processing at any case will immediatelly output it.
+        this.storage.saveOutputCmd(outStr);
     }
     
     
@@ -258,8 +267,12 @@ public class ConWinOut implements WinBufEventListener
      * @param event 
      */
     private void OnAfterOutputChar(final WinBufEvent event) {
+        final String outStr = event.getEventText();
         final int outputLength = event.getEventFlags();
+        //
         this.zoneCursorPos.setX(this.zoneCursorPos.getX() + outputLength);
+        // keep text output for history after de-facto printing
+        this.storage.saveOutput(outStr);
     }
     
     /**
