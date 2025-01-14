@@ -1,5 +1,6 @@
 package me.dmitrygubanov40.concan.utility;
 
+
 import java.io.IOException;
 import java.io.Reader;
 
