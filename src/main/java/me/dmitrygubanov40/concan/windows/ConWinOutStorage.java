@@ -38,7 +38,7 @@ class ConWinOutStorage
     private ArrayList<Character> savedOutput;
     
     // line-by-line (for the current width) all output strings in the zone
-    private ArrayList<String> savedOutputLines;
+    private ArrayList<StringBuilder> savedOutputLines;
     
     // 'savedOutput' was saved with this width
     private int savedOutputLinesWidth;
@@ -64,7 +64,10 @@ class ConWinOutStorage
         }
         //
         this.savedOutput = new ArrayList<>();
+        //
         this.savedOutputLines = new ArrayList<>();
+        this.savedOutputLines.add(new StringBuilder());// init with empty string
+        //
         this.savedOutputLinesWidth = initWidth;
         this.savedOutputSizeLimit = initLimit;
     }
@@ -78,9 +81,12 @@ class ConWinOutStorage
      * Transfer regular text to the storage.
      * Automatically clear (cut off) previous symbols out of storage size limit.
      * @param addedTxt text to save
+     * @param addedTxtWidth width of the text we are saving
      * @throws NullPointerException when tries to save null-string  
+     * @throws RuntimeException if text width has been changed
      */
-    public void saveOutput(final String addedTxt) throws NullPointerException {
+    public void saveOutput(final String addedTxt, final int addedTxtWidth)
+                    throws NullPointerException, RuntimeException {
         if ( null == addedTxt ) {
             String excMsg = "Tried to save null-pointer string as console output";
             throw new NullPointerException(excMsg);
@@ -110,17 +116,31 @@ class ConWinOutStorage
         // must save everything passed in 'addedTxt' char-by-char
         char[] addedChars = addedTxt.toCharArray();
         for ( int i = 0; i < addedChars.length; i++ ) {
-            this.savedOutput.add(addedChars[ i ]);
+            this.savedOutput.add(addedChars[ i ]);// all symbols archive
         }
+        //
+        // Must add new chars to the last line of 'savedOutputLines'.
+        // First of all, check if the width has changed
+        if ( this.savedOutputLinesWidth != addedTxtWidth ) {
+            String excMsg = "Text area width has been changed."
+                            + " Was initially: " + this.savedOutputLinesWidth
+                            + ", now is: " + addedTxtWidth;
+            throw new RuntimeException(excMsg);
+        }
+        final int lastLineIndex = this.savedOutputLines.size() - 1;
+        StringBuilder lastLine = this.savedOutputLines.get(lastLineIndex);
+        lastLine.append(addedTxt);
     }
     
     /**
      * Transfer text of the command (special character or ESC-sequence)
      * to the storage.
+     * Does not control text area width, command can be of any width.
      * @param addedTxt command to save
      * @throws NullPointerException when tries to save null-string command
      */
-    public void saveOutputCmd(final String addedTxt) throws NullPointerException {
+    public void saveOutputCmd(final String addedTxt)
+                    throws NullPointerException {
         if ( null == addedTxt ) {
             String excMsg = "Tried to save null-pointer"
                                 + " command string as console output";
@@ -138,7 +158,16 @@ class ConWinOutStorage
             cmdToSave = addedTxt;
         }
         //
-        this.saveOutput(cmdToSave);
+        this.saveOutput(cmdToSave, this.savedOutputLinesWidth);
+    }
+    
+    
+    
+    /**
+     * Insert (start) new line in the lines archvie.
+     */
+    public void storeNewLine() {
+        this.savedOutputLines.add(new StringBuilder(0));
     }
     
     
@@ -185,6 +214,19 @@ class ConWinOutStorage
      */
     public String getSavedOutputStr() {
         return String.valueOf(this.getSavedOutput());
+    }
+    
+    /**
+     * @return list of all saved lines as separate Strings
+     */
+    public ArrayList<String> getSavedOutputLines() {
+        ArrayList<String> linesResult = new ArrayList<>();
+        //
+        for ( StringBuilder curLine : this.savedOutputLines ) {
+            linesResult.add(curLine.toString());
+        }
+        //
+        return linesResult;
     }
     
     
