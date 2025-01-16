@@ -1,6 +1,8 @@
 package me.dmitrygubanov40.concan.windows;
 
 
+import java.util.ArrayList;
+
 import me.dmitrygubanov40.concan.utility.ConCord;
 import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.winbuffer.*;
@@ -102,9 +104,11 @@ public class ConWinOut implements WinBufEventListener
     }
     
     
+    
     ////////////////////////////
     // Events
     ////////////////////////////
+    
     
     /**
      * Head caller of all events.
@@ -182,7 +186,7 @@ public class ConWinOut implements WinBufEventListener
             // synchronize de-facto behavior and console condition
             this.processSpecialChar(outStr, eventBuffer);
         } else if ( outStr.length() > 1 ) {
-            // case of escape sequence - immediately flush it to be shown
+            // case of escape sequence - flush it to be shown
             eventBuffer.flush();
         }
         // Keep command output for history straight after it was added:
@@ -214,6 +218,7 @@ public class ConWinOut implements WinBufEventListener
             }
             //
             this.goNewLine();
+            this.storage.storeNewLine();
             //
         }
     }
@@ -272,7 +277,7 @@ public class ConWinOut implements WinBufEventListener
         //
         this.zoneCursorPos.setX(this.zoneCursorPos.getX() + outputLength);
         // keep text output for history after de-facto printing
-        this.storage.saveOutput(outStr);
+        this.storage.saveOutput(outStr, this.zoneWidth);
     }
     
     /**
@@ -299,6 +304,7 @@ public class ConWinOut implements WinBufEventListener
     private void OnAfterOutputCmd(final WinBufEvent event) {
         // ...
     }
+    
     
     ////////////////////////////
     // end of events block
@@ -370,7 +376,10 @@ public class ConWinOut implements WinBufEventListener
      * in base class.
      */
     private void goNewLine() {
+        // imitation of new line cursor behavior:
         this.specialCharProcessor.callNewLine();
+        // insert new line in the archive (storage):
+        this.storage.storeNewLine();
     }
     
     
@@ -404,6 +413,22 @@ public class ConWinOut implements WinBufEventListener
         //
         // need 'flush' to recalculate buffer length and zone status
         buf.flush();
+    }
+    
+    
+    
+    /**
+     * @return all symbols data we have in storage
+     */
+    public String getOutput() {
+        return this.storage.getSavedOutputStr();
+    }
+    
+    /**
+     * @return all strings data (for current zone width)
+     */
+    public ArrayList<String> getOutputLines() {
+        return this.storage.getSavedOutputLines();
     }
     
     
