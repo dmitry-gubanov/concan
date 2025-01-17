@@ -8,7 +8,7 @@ import me.dmitrygubanov40.concan.utility.ConCord;
  * Exception caused by attempt to move cursor out of terminal window.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class OutOfTerminalWindowException extends Exception
+public class OutOfTerminalWindowException extends RuntimeException
 {
     
     // coordinates which can be applied instead
