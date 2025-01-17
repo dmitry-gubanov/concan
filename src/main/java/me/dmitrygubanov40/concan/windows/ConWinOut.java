@@ -218,7 +218,6 @@ public class ConWinOut implements WinBufEventListener
             }
             //
             this.goNewLine();
-            this.storage.storeNewLine();
             //
         }
     }
