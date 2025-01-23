@@ -78,6 +78,66 @@ class ConWinOutStorage
     
     
     /**
+     * Delete some number of characters from the storage.
+     * Automatically rework lines in the storage.
+     * @param toCutOff how many symbols must be cut off (both 'savedOutput' and 'savedOutputLines')
+     */
+    private void reduceStorageData(final int toCutOff) {
+        if ( toCutOff <= 0 ) return;
+        //
+        // erase the number of chars from single-line storage
+        for ( int i = 0; i < toCutOff; i++ ) {
+            char chatToDelete = this.savedOutput.get(0);
+            this.savedOutput.remove(0);
+            if ( chatToDelete == ConWinOutStorage.CMD_START_FLAG ) {
+                // we have started to delete command block (ESC-sequence)
+                // delete all chars until delete all the command block
+                while ( this.savedOutput.get(0) != ConWinOutStorage.CMD_END_FLAG ) {
+                    this.savedOutput.remove(0);
+                    i++;
+                }
+                // finally, remove command block border
+                this.savedOutput.remove(0);
+                i++;
+            }
+        }
+        //
+        // We should also delete the lines:
+        // part of the line, and the line in general when it becomes empty.
+        for ( int i = 0; i < toCutOff; i++ ) {
+            //
+            StringBuilder firstLine;
+            //
+            this.deleteFirstEmptyLines();// now first line is not empty
+            firstLine = this.savedOutputLines.get(0);
+            //
+            char chatToDelete = firstLine.charAt(0);
+            //
+            firstLine.deleteCharAt(0);
+            this.deleteFirstEmptyLines();
+            firstLine = this.savedOutputLines.get(0);
+            //
+            if ( chatToDelete == ConWinOutStorage.CMD_START_FLAG ) {
+                // we have started to delete command block (ESC-sequence)
+                // delete all chars in this line, and further also
+                // until delete all the command block is deleted
+                while ( firstLine.charAt(0) != ConWinOutStorage.CMD_END_FLAG ) {
+                    //
+                    firstLine.deleteCharAt(0);
+                    this.deleteFirstEmptyLines();
+                    firstLine = this.savedOutputLines.get(0);
+                    //
+                    i++;
+                }
+                // deleting the end bracket of command block
+                firstLine.deleteCharAt(0);
+                this.deleteFirstEmptyLines();
+                i++;
+            }
+        }
+    }
+    
+    /**
      * Transfer regular text to the storage.
      * Automatically clear (cut off) previous symbols out of storage size limit.
      * @param addedTxt text to save
@@ -99,18 +159,7 @@ class ConWinOutStorage
         toCutOff = addedTxtLength + this.savedOutput.size() - this.savedOutputSizeLimit;
         // Symbols overflow, need to cut off some previous characters.
         if ( toCutOff > 0 ) {
-            for ( int i = 0; i < toCutOff; i++ ) {
-                char chatToDelete = this.savedOutput.get(0);
-                this.savedOutput.remove(0);
-                if ( chatToDelete == ConWinOutStorage.CMD_START_FLAG ) {
-                    // we have started to delete command block (ESC-sequence)
-                    // delete all chars until delete all the command block
-                    while ( this.savedOutput.get(0) != ConWinOutStorage.CMD_END_FLAG ) {
-                        this.savedOutput.remove(0);
-                        i++;
-                    }
-                }
-            }
+            this.reduceStorageData(toCutOff);
         }
         //
         // must save everything passed in 'addedTxt' char-by-char
@@ -140,7 +189,7 @@ class ConWinOutStorage
      * @throws NullPointerException when tries to save null-string command
      */
     public void saveOutputCmd(final String addedTxt)
-                    throws NullPointerException {
+                            throws NullPointerException {
         if ( null == addedTxt ) {
             String excMsg = "Tried to save null-pointer"
                                 + " command string as console output";
@@ -164,10 +213,48 @@ class ConWinOutStorage
     
     
     /**
-     * Insert (start) new line in the lines archvie.
+     * Insert (start) new line in the lines archive.
      */
     public void storeNewLine() {
-        this.savedOutputLines.add(new StringBuilder(0));
+        this.savedOutputLines.add(new StringBuilder());
+    }
+    
+    /**
+     * Delete the first line in the lines archive.
+     * @throws IndexOutOfBoundsException if try to erase the last line
+     * @throws UnsupportedOperationException if try to erase non-empty line
+     */
+    public void deleteFirstLine()
+                    throws IndexOutOfBoundsException {
+        if ( this.savedOutputLines.size() <= 1 ) {
+            String excMsg = "Cannot delete the last line in the storage";
+            throw new IndexOutOfBoundsException(excMsg);
+        }
+        StringBuilder firstLine = this.savedOutputLines.get(0);
+        if ( firstLine.length() > 0 ) {
+            String excMsg = "Cannot delete non-empty line in the storage";
+            throw new UnsupportedOperationException(excMsg);
+        }
+        //
+        this.savedOutputLines.remove(0);
+    }
+    
+    /**
+     * Delete all empty first lines in the storage.
+     */
+    private void deleteFirstEmptyLines() {
+        while ( this.savedOutputLines.get(0).length() <= 0 ) {
+            // if some first storage rows are empty - just delete them
+            try {
+                // would no delete the last row
+                this.deleteFirstLine();
+            } catch ( IndexOutOfBoundsException e ) {
+                // the last row is re-inited, and exit
+                this.savedOutputLines = new ArrayList<>();
+                this.savedOutputLines.add(new StringBuilder());// init with empty string
+                break;
+            }
+        }    
     }
     
     
@@ -176,11 +263,13 @@ class ConWinOutStorage
      * Give char-array with all kept in memory output symbols
      * from 'savedOutput' list.
      * Direct line of everything passed by output.
+     * @param outputLine what line are we going to process?
      * @return array of all symbols passed through output
      * @throws RuntimeException if symbols' archive cannot be processed correctly
      */
-    public char[] getSavedOutput() throws RuntimeException {
-        ArrayList<Character> outputToGet = new ArrayList<>(this.savedOutput);//this.savedOutput;
+    public char[] getSavedOutput(ArrayList<Character> outputLine)
+                        throws RuntimeException {
+        ArrayList<Character> outputToGet = new ArrayList<>(outputLine);
         // remove inner 'ConWinOutStorage' func-symbols:
         outputToGet.removeIf(
             (symbol) -> {
@@ -213,7 +302,7 @@ class ConWinOutStorage
      * @return string with all symbols passed through output
      */
     public String getSavedOutputStr() {
-        return String.valueOf(this.getSavedOutput());
+        return String.valueOf( this.getSavedOutput(this.savedOutput) );
     }
     
     /**
@@ -223,7 +312,17 @@ class ConWinOutStorage
         ArrayList<String> linesResult = new ArrayList<>();
         //
         for ( StringBuilder curLine : this.savedOutputLines ) {
-            linesResult.add(curLine.toString());
+            // get chars of current line:
+            char[] curLineChars = new char[ curLine.length() ];
+            curLine.getChars(0, curLine.length(), curLineChars, 0);
+            //
+            // chars array - into list:
+            ArrayList<Character> curLineArrayList = new ArrayList<>();
+            for ( char curChar : curLineChars ) {
+                curLineArrayList.add(curChar);
+            }
+            //
+            linesResult.add(String.valueOf( this.getSavedOutput(curLineArrayList) ));
         }
         //
         return linesResult;
