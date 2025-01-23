@@ -3,6 +3,9 @@ package me.dmitrygubanov40.concan.windows;
 
 import java.util.ArrayList;
 
+import me.dmitrygubanov40.concan.paint.ConDraw;
+import me.dmitrygubanov40.concan.paint.ConDrawFill;
+import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConCord;
 import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.winbuffer.*;
@@ -17,18 +20,36 @@ import me.dmitrygubanov40.concan.winbuffer.*;
 public class ConWinOut implements WinBufEventListener
 {
     
+    // letters are of this color by default
+    private static final ConCol DEFAULT_FONT_COLOR;
+    // background is this
+    private static final ConCol DEFAULT_BACKGROUND;
+    
+    static {
+        DEFAULT_FONT_COLOR = ConCol.SILVER;
+        DEFAULT_BACKGROUND = ConCol.BLACK;
+    }
+    
+    ///////////////////////////////
+    
     // console manipulation helper
     // (no window's buffer connection)
     private final ConUt consoleTool;
     
     // outout console buffer for this window
     private final WindowOutputBuffer zoneBuf;
+    private final boolean isAsyncSafe;
     
     // start point of output zone
     private ConCord zonePosition;
     
-    // current cursor position in zone
+    // current cursor position in the zone
+    // i.e. can have height over 'zoneHeight'
     private ConCord zoneCursorPos;
+    
+    // number of lines has passed up into 'invisibility'
+    // (if it is a scrollable zone)
+    private int zoneCursorScrolledDown;
     
     // width and height of buffer output zone
     // must be less than parent window
@@ -39,11 +60,23 @@ public class ConWinOut implements WinBufEventListener
     // allows us to put chars
     private ConCord terminalMaxCoords;
     
+    
     // special chars manipulator helper (for console)
     private ConWinOutSpecChars specialCharProcessor;
     
+    
     // 'archive' of data has been output
     private ConWinOutStorage storage;
+    
+    // Should the output scroll down as in real terminal,
+    // or attempt to step over vertical border
+    // put cursor on the first line?
+    private boolean isZoneScrollable;
+    
+    
+    // after reset it is supposed we have such output
+    private ConCol defaultColor;
+    private ConCol defaultBackground;
     
     
     ////////////
@@ -64,17 +97,23 @@ public class ConWinOut implements WinBufEventListener
         // buffer size is the same as zone's width:
         this.zoneBuf = new WindowOutputBuffer(setWidth, isSetSafeAsync);
         this.installEvents();
-        //
-        this.zonePosition = setPos;
-        this.zoneCursorPos = new ConCord(0, 0);
+        this.isAsyncSafe = isSetSafeAsync;
         //
         this.zoneWidth = setWidth;
         this.zoneHeight = setHeight;
+        //
+        this.zonePosition = setPos;
+        this.zoneCursorPos = new ConCord(0, 0);
+        this.zoneCursorScrolledDown = 0;
+        this.isZoneScrollable = this.canBeScrollable();// default zone will automatically scroll down if can
         //
         this.storage = new ConWinOutStorage(this.zoneWidth);
         //
         this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
+        //
+        this.defaultColor = ConWinOut.DEFAULT_FONT_COLOR;
+        this.defaultBackground = ConWinOut.DEFAULT_BACKGROUND;
     }
     
     /**
@@ -101,6 +140,18 @@ public class ConWinOut implements WinBufEventListener
                         final ConCord setPos,
                         final boolean isSetSafeAsync) {
         return new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
+    }
+    
+    /**
+     * Restart storage.
+     * All previous data will be erased.
+     * @param initLimit 
+     */
+    public void startNewStorage(final int initLimit) {
+        this.storage = new ConWinOutStorage(this.zoneWidth, initLimit);
+    }
+    public void startNewStorage() {
+        this.storage = new ConWinOutStorage(this.zoneWidth);
     }
     
     
@@ -263,6 +314,12 @@ public class ConWinOut implements WinBufEventListener
             // now will be moved somewhere in the nearest position
             this.consoleTool.sendGoto( termBorderExc.getAllowedCoords() );
         }
+        //
+        // before symbols are printed proof we will not go over borders
+        if ( this.isOverHeight() ) {
+            if ( this.isScrollable() ) this.scrollDown();
+            else this.moveCursorIntoBorder();
+        }
     }
     
     /**
@@ -286,7 +343,9 @@ public class ConWinOut implements WinBufEventListener
      */
     private void OnBeforeOutputCmd(final WinBufEvent event) {
         try {
+            //
             this.takeTerminalCursorPosition();
+            //
         } catch ( OutOfTerminalWindowException termBorderExc ) {
             // event prolongations will not be stoped
             // move cursor to the nearest char's block
@@ -316,7 +375,7 @@ public class ConWinOut implements WinBufEventListener
      * @param str text line we will add to the zone
      */
     public void addToZone(final String str) {
-        if ( str.length() <= 0 ) {
+        if ( null == str || str.length() <= 0 ) {
             // no empty strings
             return;
         }
@@ -334,11 +393,84 @@ public class ConWinOut implements WinBufEventListener
     }
     
     /**
+     * Directly print some text in the zone.
+     * It is overlay output over already printed text from the buffer,
+     * and it does not correspond with the buffer anyway.
+     * 'str' will be just put over in the terminal's console.
+     * @param str what to print in the zone
+     * @param coords where to start printing
+     * @throws IllegalArgumentException when requested to print out of zone borders
+     */
+    private void printInZone(final String str, final ConCord coords) 
+                    throws IllegalArgumentException {
+        if ( null == str || null == coords || str.length() <= 0 ) {
+            // incorrect arguments
+            return;
+        }
+        //
+        if ( coords.getX() >= this.zoneWidth
+                || coords.getY() >= this.zoneHeight ) {
+            // cannot start output away from the zone coordinates
+            String excMsg = "Printing in the window zone initiated out of zone borders."
+                                + " Requested coordinates: " + coords
+                                + ", zone width: " + this.zoneWidth
+                                + ", zone height: " + this.zoneHeight;
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        // here real coordinates in terminal are calculated:
+        final ConCord reprintCoords = this.zonePosition.plus(coords);
+        consoleTool.sendGoto(reprintCoords);
+        System.out.print(str);
+    }
+    
+    
+    
+    /**
+     * @return can the zone theoretically be scrollable or not?
+     */
+    private boolean canBeScrollable() {
+        final boolean correctHeight = (this.zoneHeight > 1);
+        //
+        return correctHeight;
+    }
+    
+    /**
+     * Set new status, if zone is scrollable, or not.
+     * @param setScrollable
+     * @throws IllegalArgumentException when wants to install inappropriate status
+     */
+    public void setScrollable(final boolean setScrollable) {
+        if ( !this.canBeScrollable() && setScrollable ) {
+            // the zone cannot be scrollable, but user insist it to be so
+            String excMsg = "Window zone cannot set up to be scrollable";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        this.isZoneScrollable = setScrollable;
+    }
+    
+    /**
+     * The window zone must be set up to be scrollable, and can be such.
+     * @return window zone scrollable status
+     */
+    private boolean isScrollable() {
+        return ( this.isZoneScrollable && this.canBeScrollable() );
+    }
+    
+    
+    
+    /**
      * Get actual coordinates in terminal's console.
      * @return point in the terminal
      */
     private ConCord getTerminalZonePos() {
         ConCord curZonePos = this.zonePosition.plus(this.zoneCursorPos);
+        //
+        // take into account scrolled lines:
+        final int yPosWoScrolled = curZonePos.getY() - this.zoneCursorScrolledDown;
+        curZonePos.setY(yPosWoScrolled);
+        //
         return curZonePos;
     }
     
@@ -375,10 +507,127 @@ public class ConWinOut implements WinBufEventListener
      * in base class.
      */
     private void goNewLine() {
-        // imitation of new line cursor behavior:
-        this.specialCharProcessor.callNewLine();
         // insert new line in the archive (storage):
         this.storage.storeNewLine();
+        // imitation of new line cursor behavior:
+        this.specialCharProcessor.callNewLine();
+    }
+    
+    
+    
+    /**
+     * Checks the current cursor in the zone if it is necessary to scroll one line down.
+     * Supposed to be called after cursor was moved to output, but
+     * characters are not put yet.
+     * @return 'true' when scroll is available and necessary
+     */
+    private boolean isOverHeight() {
+        //
+        // shift-plus to switch coordinates to height scale
+        final int curPosHeight = this.zoneCursorPos.getY() + ConCord.SHIFT_Y;
+        final int maxHeightAllowed = this.zoneHeight + this.zoneCursorScrolledDown;
+        //
+        final int linesOver = curPosHeight - maxHeightAllowed;
+        //
+        return (linesOver > 0);
+    }
+    
+    /**
+     * Make cursor to jump if it is going to leave the zone.
+     * After the last line cursor will move to the first to continue output.
+     */
+    private void moveCursorIntoBorder() {
+        // zone can scroll - ignore:
+        if ( this.isScrollable() ) return;
+        //
+        final int moveX = this.zoneCursorPos.getX();
+        final int moveY = this.zoneCursorPos.getY() % this.zoneHeight;
+        if ( moveY != this.zoneCursorPos.getY() ) {
+            // cursor moved up - clear the space for new output
+            this.clearZone();
+        }
+        this.zoneCursorPos.setCord(moveX, moveY);
+        this.takeTerminalCursorPosition();// re-calculate cursor position
+    }
+    
+    /**
+     * Perform the scrolling of one line down.
+     * Suppose cursor is already out of the zone's height.
+     * Previous lines will be put other the zone to make the last line to look correct.
+     * Base idea is to use unscrollable zone to overlay print lines to imitate scrolling.
+     * @throws IllegalStateException when one line zone is to scroll (use 'moveCursorIntoBorder()')
+     */
+    private void scrollDown() {
+        // zone cannot scroll:
+        if ( !this.isScrollable() ) return;
+        //
+        ArrayList<String> prevLines = this.storage.getSavedOutputLines();
+        final int prevLinesSize = prevLines.size();
+        //
+        // Install new, temp zone for output of storage lines
+        final int tempZoneHeight = this.zoneHeight - 1;
+        ConWinOut tempScrollZone = ConWinOut.startNewZone(this.zoneWidth,
+                                                            // temp zone is one line shoter:
+                                                            tempZoneHeight,
+                                                            this.zonePosition,
+                                                            this.isAsyncSafe);
+        tempScrollZone.setScrollable(false);// it must be unscrollable zone
+        //
+        // Count number of blank lines we should to insert into temp zone
+        // to get the last line from storage in the last line of temp zone.
+        final int blankLinesNmb = this.zoneHeight - 2 - (this.zoneCursorScrolledDown % tempZoneHeight );
+        //
+        tempScrollZone.clearZone();
+        for ( int i = 0; i < blankLinesNmb; i++ ) {
+            // Necessary shift of empty lines to synchronized
+            // the last line in 'tempScrollZone' and the zone.
+            tempScrollZone.addToZone(ConUt.LF);
+        }
+        //
+        // put all the lines to transfer the styles correctly
+        // (printing only visible is much faster, but can be lost styles,
+        // saved in first lines)
+        for ( int j = 0; j < prevLinesSize; j++ ) {
+            final String prevLine = prevLines.get(j);
+            tempScrollZone.addToZone(prevLine);
+        }
+        tempScrollZone.flush();
+        //
+        this.zoneCursorScrolledDown++;// remember how many lines have been scrolled
+        //
+        // re-calculate cursor position within the zone after scrolling
+        this.takeTerminalCursorPosition();
+    }
+    
+    
+    
+    /**
+     * Cover all the zone with the filling parameter.
+     * Printed as overlay. Does not interact with the buffer.
+     * @param filling how to fill the entire zone
+     * @throws NullPointerException when filling parameters are empty
+     */
+    private void fillZone(final ConDrawFill filling) {
+        if ( null == filling ) {
+            String excMsg = "Filling parameters for the zone are null";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        ConCord leftTop = this.zonePosition;
+        ConCord rightBottom = this.zonePosition.plus(new ConCord(this.zoneWidth, this.zoneHeight));
+        // 'ConDraw' saves and restore output styles itself
+        ConDraw.bar(leftTop, rightBottom, filling);
+    }
+    
+    /**
+     * Cover all the zone with the the default colors and an empty char.
+     */
+    private void clearZone() {
+        final String EMPTY_CHAR = " ";
+        final ConDrawFill clearFill = new ConDrawFill(this.defaultBackground,
+                                                        EMPTY_CHAR,
+                                                        this.defaultColor);
+        this.fillZone(clearFill);
     }
     
     
