@@ -26,6 +26,9 @@ class ConWinOutSpecChars
     // data of the current cursor position
     private ConCord curCursor;
     
+    // pointer to window zone lines storage
+    private ConWinOutStorage curStorage;
+    
     // such width is allowed to work (put characters) in the area
     private int allowedWidth;
     
@@ -45,6 +48,23 @@ class ConWinOutSpecChars
         //
         this.curCursor = initCurCursor;
         this.allowedWidth = initAllowedWidth;
+        //
+        this.curStorage = null;// need 'linkStorage()' to have storage pointer
+    }
+    
+    /**
+     * The processing gets its own strings archive to influence it
+     * during characters processing.
+     * @param initCurStorage 
+     */
+    public void linkStorage(final ConWinOutStorage initCurStorage)
+                        throws NullPointerException {
+        if ( null == initCurStorage ) {
+            String excMsg = "Lines archive (storage) is not specified (is null)";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.curStorage = initCurStorage;
     }
     
     //
@@ -65,10 +85,21 @@ class ConWinOutSpecChars
      * Move cursor on new line in the area.
      * Calculate coordinates, does not move cursor directly.
      * @param xToSet where cursor will appear via X-axis
+     * @throws NullPointerException when pointer to strings archive (storage) is absent
+     * @see linkStorage()
      */
-    private void setNewLine(final int xToSet) {
+    private void setNewLine(final int xToSet)
+                        throws NullPointerException {
         this.curCursor.setX(xToSet);
         this.curCursor.setY(this.curCursor.getY() + 1);
+        //
+        if ( null == this.curStorage ) {
+            // strings archive is necessary but is absent
+            String excMsg = "Lines archive (storage) is null (not linked)";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.curStorage.storeNewLine();// add new line in zone's data
     }
     private void setNewLine() {
         this.setNewLine(0);
