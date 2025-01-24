@@ -107,8 +107,6 @@ public class ConWinOut implements WinBufEventListener
         this.zoneCursorScrolledDown = 0;
         this.isZoneScrollable = this.canBeScrollable();// default zone will automatically scroll down if can
         //
-        this.storage = new ConWinOutStorage(this.zoneWidth);
-        //
         this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
         //
@@ -129,7 +127,8 @@ public class ConWinOut implements WinBufEventListener
     }
     
     /**
-     * Static constructor of a output window zone.
+     * Static constructor of the basic output window zone.
+     * Has regular storage (default size), and is scrollable.
      * @param setWidth width
      * @param setHeight height
      * @param setPos first-point coordinate of the zone
@@ -139,19 +138,38 @@ public class ConWinOut implements WinBufEventListener
     public static ConWinOut startNewZone(final int setWidth, final int setHeight,
                         final ConCord setPos,
                         final boolean isSetSafeAsync) {
-        return new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
+        ConWinOut newZone = new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
+        newZone.startNewStorage();
+        //
+        return newZone;
     }
     
     /**
      * Restart storage.
      * All previous data will be erased.
-     * @param initLimit 
+     * Also, links new storage to special symbols processor.
+     * @param initLimit max length of storage, in chars (or default size)
      */
     public void startNewStorage(final int initLimit) {
         this.storage = new ConWinOutStorage(this.zoneWidth, initLimit);
+        this.specialCharProcessor.linkStorage(this.storage);
     }
     public void startNewStorage() {
         this.storage = new ConWinOutStorage(this.zoneWidth);
+        this.specialCharProcessor.linkStorage(this.storage);
+    }
+    
+    /**
+     * Make the zone to work without strings archive.
+     * Links off-storage to special symbols processor.
+     * Also, scrolling is automatically off
+     * (because it is impossible to scroll without buffer).
+     */
+    public void turnOffStorage() {
+        this.storage = new ConWinOutStorage(this.zoneWidth);
+        this.storage.turnOff();
+        this.setScrollable(false);// can scroll w/o the archive
+        this.specialCharProcessor.linkStorage(this.storage);
     }
     
     
@@ -268,7 +286,9 @@ public class ConWinOut implements WinBufEventListener
                 eventBuffer.sliceOut(sliceLength);
             }
             //
-            this.goNewLine();
+            // new line via 'ConWinOutSpecChars':
+            // move one line down, save the new line in 'storage'-archive.
+            this.specialCharProcessor.callNewLine();
             //
         }
     }
@@ -316,7 +336,8 @@ public class ConWinOut implements WinBufEventListener
         }
         //
         // before symbols are printed proof we will not go over borders
-        if ( this.isOverHeight() ) {
+        while ( this.isOverHeight() ) {
+            // should scroll down when output is back in the zone
             if ( this.isScrollable() ) this.scrollDown();
             else this.moveCursorIntoBorder();
         }
@@ -400,6 +421,9 @@ public class ConWinOut implements WinBufEventListener
      * @param str what to print in the zone
      * @param coords where to start printing
      * @throws IllegalArgumentException when requested to print out of zone borders
+     * 
+     * 2DO: use inner zone to print in the area
+     * 
      */
     private void printInZone(final String str, final ConCord coords) 
                     throws IllegalArgumentException {
@@ -501,18 +525,6 @@ public class ConWinOut implements WinBufEventListener
         this.consoleTool.sendGoto(curTerminalPos);
     }
     
-    /**
-     * Apply 'technical' movement of cursor to the new line.
-     * Uses the same algorithm as 'LF' character, but is open to manipulation
-     * in base class.
-     */
-    private void goNewLine() {
-        // insert new line in the archive (storage):
-        this.storage.storeNewLine();
-        // imitation of new line cursor behavior:
-        this.specialCharProcessor.callNewLine();
-    }
-    
     
     
     /**
@@ -561,8 +573,13 @@ public class ConWinOut implements WinBufEventListener
         // zone cannot scroll:
         if ( !this.isScrollable() ) return;
         //
+        
+        
+        //!!!???
         ArrayList<String> prevLines = this.storage.getSavedOutputLines();
         final int prevLinesSize = prevLines.size();
+        
+        
         //
         // Install new, temp zone for output of storage lines
         final int tempZoneHeight = this.zoneHeight - 1;
@@ -571,13 +588,13 @@ public class ConWinOut implements WinBufEventListener
                                                             tempZoneHeight,
                                                             this.zonePosition,
                                                             this.isAsyncSafe);
-        tempScrollZone.setScrollable(false);// it must be unscrollable zone
+        tempScrollZone.turnOffStorage();// it must be unscrollable zone without buffer
         //
         // Count number of blank lines we should to insert into temp zone
         // to get the last line from storage in the last line of temp zone.
         final int blankLinesNmb = this.zoneHeight - 2 - (this.zoneCursorScrolledDown % tempZoneHeight );
         //
-        tempScrollZone.clearZone();
+        //tempScrollZone.clearZone();
         for ( int i = 0; i < blankLinesNmb; i++ ) {
             // Necessary shift of empty lines to synchronized
             // the last line in 'tempScrollZone' and the zone.
@@ -585,12 +602,15 @@ public class ConWinOut implements WinBufEventListener
         }
         //
         // put all the lines to transfer the styles correctly
-        // (printing only visible is much faster, but can be lost styles,
-        // saved in first lines)
-        for ( int j = 0; j < prevLinesSize; j++ ) {
-            final String prevLine = prevLines.get(j);
-            tempScrollZone.addToZone(prevLine);
+        // (printing only visible is much faster, but we can lost styles,
+        // saved in previous lines)
+        for ( String curPrevLine : prevLines ) {
+            tempScrollZone.addToZone(curPrevLine);
+            // if length of 'curPrevLine' less than zone's width it is necessary,
+            // but if it fits the width - LF-char won't affect visualization.
+            tempScrollZone.addToZone(ConUt.LF);
         }
+        //
         tempScrollZone.flush();
         //
         this.zoneCursorScrolledDown++;// remember how many lines have been scrolled
