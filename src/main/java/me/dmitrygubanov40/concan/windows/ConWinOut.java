@@ -68,10 +68,15 @@ public class ConWinOut implements WinBufEventListener
     // 'archive' of data has been output
     private ConWinOutStorage storage;
     
+    
     // Should the output scroll down as in real terminal,
     // or attempt to step over vertical border
     // put cursor on the first line?
     private boolean isZoneScrollable;
+    
+    
+    // clear everything in the zone before output
+    private boolean isZoneToClear;
     
     
     // after reset it is supposed we have such output
@@ -83,7 +88,7 @@ public class ConWinOut implements WinBufEventListener
     
     /**
      * Closed constructor of a output window zone.
-     * See 'startNewZone'.
+     * @see 'startNewZone()'.
      * @param setWidth width
      * @param setHeight height
      * @param setPos first-point coordinate of the zone
@@ -106,6 +111,8 @@ public class ConWinOut implements WinBufEventListener
         this.zoneCursorPos = new ConCord(0, 0);
         this.zoneCursorScrolledDown = 0;
         this.isZoneScrollable = this.canBeScrollable();// default zone will automatically scroll down if can
+        //
+        this.isZoneToClear = true;
         //
         this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
@@ -132,16 +139,28 @@ public class ConWinOut implements WinBufEventListener
      * @param setWidth width
      * @param setHeight height
      * @param setPos first-point coordinate of the zone
+     * @param setClearState regime of clearing before output
      * @param isSetSafeAsync is our buffer ready to work in async-regime?
      * @return pointer toward a new window output zone
      */
     public static ConWinOut startNewZone(final int setWidth, final int setHeight,
                         final ConCord setPos,
+                        final boolean setClearState,
                         final boolean isSetSafeAsync) {
         ConWinOut newZone = new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
         newZone.startNewStorage();
+        newZone.setClearZoneRegime(setClearState);
+        if ( newZone.getClearZoneRegime() ) {
+            // when created with 'clear' mode - clear the zone
+            newZone.clearZone();
+        }
         //
         return newZone;
+    }
+    // clear mode - on, and async mode - off - creator
+    public static ConWinOut startNewZone(final int setWidth, final int setHeight,
+                        final ConCord setPos) {
+        return ConWinOut.startNewZone(setWidth, setHeight, setPos, true, false);
     }
     
     /**
@@ -168,8 +187,22 @@ public class ConWinOut implements WinBufEventListener
     public void turnOffStorage() {
         this.storage = new ConWinOutStorage(this.zoneWidth);
         this.storage.turnOff();
-        this.setScrollable(false);// can scroll w/o the archive
+        //
+        this.setScrollable(false);// cannot scroll w/o the archive
+        //
         this.specialCharProcessor.linkStorage(this.storage);
+    }
+    
+    /**
+     * Whether or not clear all the space before output.
+     * Clearing is done by default, use to switch.
+     * @param setToClear 
+     */
+    public void setClearZoneRegime(final boolean setToClear) {
+        this.isZoneToClear = setToClear;
+    }
+    public boolean getClearZoneRegime() {
+        return this.isZoneToClear;
     }
     
     
@@ -414,38 +447,57 @@ public class ConWinOut implements WinBufEventListener
     }
     
     /**
-     * Directly print some text in the zone.
+     * Directly print some text in the zone, borders-safe.
      * It is overlay output over already printed text from the buffer,
      * and it does not correspond with the buffer anyway.
-     * 'str' will be just put over in the terminal's console.
+     * 'str' will be just put over in the terminal's console,
+     * using the zone's borders.
      * @param str what to print in the zone
-     * @param coords where to start printing
+     * @param clearBeforePrint do we clear the zone before printing?
+     * @param coords where to start printing (counting from the zone's start point)
+     * @param width text area we want width
+     * @param height text area we want height
      * @throws IllegalArgumentException when requested to print out of zone borders
-     * 
-     * 2DO: use inner zone to print in the area
-     * 
      */
-    private void printInZone(final String str, final ConCord coords) 
+    public void printInZone(final String str,
+                                final boolean clearBeforePrint,
+                                final ConCord coords,
+                                final int width,
+                                final int height)
                     throws IllegalArgumentException {
         if ( null == str || null == coords || str.length() <= 0 ) {
             // incorrect arguments
             return;
         }
         //
-        if ( coords.getX() >= this.zoneWidth
-                || coords.getY() >= this.zoneHeight ) {
+        final ConCord printZoneCoords = this.zonePosition.plus(coords);
+        //
+        final int printZoneWidthMax = this.zoneWidth - coords.getX();
+        final int printZoneHeightMax = this.zoneHeight - coords.getY();
+        //
+        if ( printZoneWidthMax <= 0 || printZoneHeightMax <= 0
+                || width > printZoneWidthMax || height > printZoneHeightMax ) {
             // cannot start output away from the zone coordinates
             String excMsg = "Printing in the window zone initiated out of zone borders."
                                 + " Requested coordinates: " + coords
                                 + ", zone width: " + this.zoneWidth
-                                + ", zone height: " + this.zoneHeight;
+                                + ", zone height: " + this.zoneHeight
+                                + ", text area width: " + width
+                                + ", text area height: " + height;
             throw new IllegalArgumentException(excMsg);
         }
-        //
-        // here real coordinates in terminal are calculated:
-        final ConCord reprintCoords = this.zonePosition.plus(coords);
-        consoleTool.sendGoto(reprintCoords);
-        System.out.print(str);
+        ConWinOut printZone = ConWinOut.startNewZone(width,
+                                                        height,
+                                                        printZoneCoords,
+                                                        clearBeforePrint,
+                                                        this.isAsyncSafe);
+        printZone.turnOffStorage();// unscrollable zone without buffer
+        printZone.addToZone(str);
+        printZone.flush();
+    }
+    public void printInZone(final String str) {
+        // text area w/o clearing in all the zone
+        this.printInZone(str, false, new ConCord(0, 0), this.zoneWidth, this.zoneHeight);
     }
     
     
@@ -534,7 +586,6 @@ public class ConWinOut implements WinBufEventListener
      * @return 'true' when scroll is available and necessary
      */
     private boolean isOverHeight() {
-        //
         // shift-plus to switch coordinates to height scale
         final int curPosHeight = this.zoneCursorPos.getY() + ConCord.SHIFT_Y;
         final int maxHeightAllowed = this.zoneHeight + this.zoneCursorScrolledDown;
@@ -553,10 +604,10 @@ public class ConWinOut implements WinBufEventListener
         if ( this.isScrollable() ) return;
         //
         final int moveX = this.zoneCursorPos.getX();
-        final int moveY = this.zoneCursorPos.getY() % this.zoneHeight;
+        final int moveY = (this.zoneCursorPos.getY() % this.zoneHeight);
         if ( moveY != this.zoneCursorPos.getY() ) {
             // cursor moved up - clear the space for new output
-            this.clearZone();
+            if ( true == this.getClearZoneRegime() ) this.clearZone();
         }
         this.zoneCursorPos.setCord(moveX, moveY);
         this.takeTerminalCursorPosition();// re-calculate cursor position
@@ -570,16 +621,10 @@ public class ConWinOut implements WinBufEventListener
      * @throws IllegalStateException when one line zone is to scroll (use 'moveCursorIntoBorder()')
      */
     private void scrollDown() {
-        // zone cannot scroll:
+        // zone cannot scroll - so, ignore:
         if ( !this.isScrollable() ) return;
         //
-        
-        
-        //!!!???
         ArrayList<String> prevLines = this.storage.getSavedOutputLines();
-        final int prevLinesSize = prevLines.size();
-        
-        
         //
         // Install new, temp zone for output of storage lines
         final int tempZoneHeight = this.zoneHeight - 1;
@@ -587,6 +632,7 @@ public class ConWinOut implements WinBufEventListener
                                                             // temp zone is one line shoter:
                                                             tempZoneHeight,
                                                             this.zonePosition,
+                                                            true,// must clear
                                                             this.isAsyncSafe);
         tempScrollZone.turnOffStorage();// it must be unscrollable zone without buffer
         //
@@ -594,7 +640,6 @@ public class ConWinOut implements WinBufEventListener
         // to get the last line from storage in the last line of temp zone.
         final int blankLinesNmb = this.zoneHeight - 2 - (this.zoneCursorScrolledDown % tempZoneHeight );
         //
-        //tempScrollZone.clearZone();
         for ( int i = 0; i < blankLinesNmb; i++ ) {
             // Necessary shift of empty lines to synchronized
             // the last line in 'tempScrollZone' and the zone.
