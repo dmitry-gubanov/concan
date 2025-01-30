@@ -423,8 +423,8 @@ public enum ConCol
         //
         int consoleColorCodeVGA = this.getColorCode();
         //
-        if ( this.getColorCode() <= (LIMIT_4B / 2) ) {
-            // first 8 colors shif
+        if ( this.getColorCode() < (LIMIT_4B / 2) ) {
+            // first 8 colors shift
             consoleColorCodeVGA += FIRST_COLORS_SHIFT_4B;
         } else {
             // last 8 colors shift
@@ -448,7 +448,7 @@ public enum ConCol
     
     
     /**
-     * 
+     * Calculate and translate 'colorRgb' to the visual closest ConCol-color.
      * @param colorRgb random true color we search an analog in 'ConCol'
      * @return the most close visually 'ConCol'-color (via chosen method)
      */
