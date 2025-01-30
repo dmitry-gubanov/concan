@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.utility.ConCol;
+import me.dmitrygubanov40.concan.utility.Term;
 
 
 
@@ -30,7 +31,7 @@ public class ConDrawFill
     
     static {
         DEFAULT_COLOR = ConCol.WHITE;
-        DEFAULT_BRUSH = " ";
+        DEFAULT_BRUSH = Term.EMPTY_CHAR;
         DEFAULT_BRUSH_COLOR = ConCol.BLACK;
         BRUSH_LENGTH_ALLOWED = 1;
     }
@@ -180,7 +181,7 @@ public class ConDrawFill
     
     
     /**
-     * Other setters block
+     * Other setters block.
      */
     public void setColor(ConCol color) {
         this.trueColor = color.getTrueColor();
