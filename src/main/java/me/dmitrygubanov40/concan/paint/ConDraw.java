@@ -114,16 +114,9 @@ public class ConDraw
         // save cursor:
         conTool.sendSave();
         //
-        // install filling, ConCol/Color approaches:
-        if ( fill.isConCol() ) {
-            // pre-made console colors
-            conTool.sendBackground8B(fill.getConCol());
-            conTool.sendColor8B(fill.getBrushConCol());
-        } else {
-            // TrueColor in RGB
-            conTool.sendBackground(fill.getColor());
-            conTool.sendColor(fill.getBrushColor());
-        }
+        // install filling colors:
+        conTool.sendBackground(fill.getColor());
+        conTool.sendColor(fill.getBrushColor());
         //
         // add styles we have, in order they were added
         ArrayList<ConDrawFillStyle> currentStyles = fill.getStyles();
