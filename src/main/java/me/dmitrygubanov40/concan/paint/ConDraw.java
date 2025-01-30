@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConCord;
 import me.dmitrygubanov40.concan.utility.ConUt;
+import me.dmitrygubanov40.concan.utility.Term;
 
 
 
@@ -113,9 +114,6 @@ public class ConDraw
         // save cursor:
         conTool.sendSave();
         //
-        // cannot go far away these coordinates
-        ConCord maxTermCoord = ConUt.getTerminalMaxCoord();
-        //
         // install filling, ConCol/Color approaches:
         if ( fill.isConCol() ) {
             // pre-made console colors
@@ -139,8 +137,8 @@ public class ConDraw
         for ( ConCord curDrawPoint : coords ) {
             //
             // preventer of leaving terminal window
-            if ( curDrawPoint.getX() > maxTermCoord.getX()
-                    || curDrawPoint.getY() > maxTermCoord.getY() ) {
+            if ( curDrawPoint.getX() > Term.get().maxX()
+                    || curDrawPoint.getY() > Term.get().maxY() ) {
                 continue;
             }
             //
