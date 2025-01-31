@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConCord;
+import me.dmitrygubanov40.concan.utility.ConStyles;
 import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.utility.Term;
 
@@ -78,10 +79,10 @@ public class ConDraw
     /**
      * Static filling styles updaters.
      */
-    public static void style(ConDrawFillStyle styleToAdd) {
+    public static void style(ConStyles styleToAdd) {
         ConDraw.staticFill.addStyle(styleToAdd);
     }
-    public static void styleRemove(ConDrawFillStyle styleToRemove) {
+    public static void styleRemove(ConStyles styleToRemove) {
         ConDraw.staticFill.removeStyle(styleToRemove);
     }
     
@@ -119,9 +120,9 @@ public class ConDraw
         conTool.sendColor(fill.getBrushColor());
         //
         // add styles we have, in order they were added
-        ArrayList<ConDrawFillStyle> currentStyles = fill.getStyles();
+        ArrayList<ConStyles> currentStyles = fill.getStyles();
         if ( !currentStyles.isEmpty() ) {
-            for ( ConDrawFillStyle curStyle : currentStyles ) {
+            for ( ConStyles curStyle : currentStyles ) {
                 System.out.print(curStyle.getStyleCmd());
             }
         }

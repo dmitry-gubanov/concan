@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.utility.ConCol;
+import me.dmitrygubanov40.concan.utility.ConStyles;
 import me.dmitrygubanov40.concan.utility.Term;
 
 
@@ -52,7 +53,7 @@ public class ConDrawFill
     private ConCol brushColor;
     
     //
-    private ArrayList<ConDrawFillStyle> styles;
+    private ArrayList<ConStyles> styles;
     
     //////////
     
@@ -159,7 +160,7 @@ public class ConDrawFill
     public Color getBrushColor() {
         return this.brushTrueColor;
     }
-    public ArrayList<ConDrawFillStyle> getStyles() {
+    public ArrayList<ConStyles> getStyles() {
         return this.styles;
     }
     
@@ -228,7 +229,7 @@ public class ConDrawFill
      * @throws NullPointerException if new style does not exist
      * @throws IllegalArgumentException when try to add opposite style ("bold_off" to "bold")
      */
-    public void addStyle(ConDrawFillStyle styleToAdd)
+    public void addStyle(ConStyles styleToAdd)
                     throws NullPointerException {
         if ( null == styleToAdd ) {
             String excMsg = "Cannot add new style to the list";
@@ -241,7 +242,7 @@ public class ConDrawFill
         }
         // can not add the "opposite" style ("bold" to "bold_off")
         // when non-opposite style is in array
-        ConDrawFillStyle oppStyle = styleToAdd.getOppositeStyleOrNull();
+        ConStyles oppStyle = styleToAdd.getOppositeStyleOrNull();
         if ( null != oppStyle && this.styles.contains(oppStyle) ) {
             String excMsg = "Cannot add opposite style '" + styleToAdd
                                 + "' to the list (opposite to '"
@@ -258,7 +259,7 @@ public class ConDrawFill
      * @param styleToRemove standard console style to remove from the filling
      * @throws NullPointerException if style to remove does not exist
      */
-    public void removeStyle(ConDrawFillStyle styleToRemove)
+    public void removeStyle(ConStyles styleToRemove)
                     throws NullPointerException {
         if ( null == styleToRemove ) {
             String excMsg = "Cannot remove null-style from the list";
@@ -277,7 +278,7 @@ public class ConDrawFill
      * @param newStyles
      * @throws NullPointerException if new list does not exist
      */
-    public void copyStyles(ArrayList<ConDrawFillStyle> newStyles)
+    public void copyStyles(ArrayList<ConStyles> newStyles)
                     throws NullPointerException {
         if ( null == newStyles ) {
             String excMsg = "Cannot update styles list";
@@ -286,7 +287,7 @@ public class ConDrawFill
         //
         this.styles = new ArrayList<>();
         //
-        for ( ConDrawFillStyle curStyle : newStyles ) {
+        for ( ConStyles curStyle : newStyles ) {
             this.styles.add(curStyle);
         }
     }
