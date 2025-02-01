@@ -136,7 +136,7 @@ public class ConDrawFill
      * @return 'true' if brush is OK, 'false' otherwise
      */
     protected boolean checkBrush(final String brushToCheck) {
-        boolean result = (brushToCheck.length() == BRUSH_LENGTH_ALLOWED);
+        boolean result = (brushToCheck.length() == ConDrawFill.BRUSH_LENGTH_ALLOWED);
         return result;
     }
     
