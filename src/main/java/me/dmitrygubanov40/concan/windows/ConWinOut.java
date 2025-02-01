@@ -5,9 +5,9 @@ import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.paint.ConDraw;
 import me.dmitrygubanov40.concan.paint.ConDrawFill;
-import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConCord;
 import me.dmitrygubanov40.concan.utility.ConUt;
+import me.dmitrygubanov40.concan.utility.Term;
 import me.dmitrygubanov40.concan.winbuffer.*;
 
 
@@ -19,18 +19,6 @@ import me.dmitrygubanov40.concan.winbuffer.*;
  */
 public class ConWinOut implements WinBufEventListener
 {
-    
-    // letters are of this color by default
-    private static final ConCol DEFAULT_FONT_COLOR;
-    // background is this
-    private static final ConCol DEFAULT_BACKGROUND;
-    
-    static {
-        DEFAULT_FONT_COLOR = ConCol.SILVER;
-        DEFAULT_BACKGROUND = ConCol.BLACK;
-    }
-    
-    ///////////////////////////////
     
     // console manipulation helper
     // (no window's buffer connection)
@@ -56,10 +44,6 @@ public class ConWinOut implements WinBufEventListener
     private int zoneWidth;
     private int zoneHeight;
     
-    // maximum in coordinates terminal
-    // allows us to put chars
-    private ConCord terminalMaxCoords;
-    
     
     // special chars manipulator helper (for console)
     private ConWinOutSpecChars specialCharProcessor;
@@ -78,10 +62,8 @@ public class ConWinOut implements WinBufEventListener
     // clear everything in the zone before output
     private boolean isZoneToClear;
     
-    
-    // after reset it is supposed we have such output
-    private ConCol defaultColor;
-    private ConCol defaultBackground;
+    // helper to keep all the styles in the zone
+    private ConWinOutBrush zoneBrush;
     
     
     ////////////
@@ -114,11 +96,9 @@ public class ConWinOut implements WinBufEventListener
         //
         this.isZoneToClear = true;
         //
-        this.terminalMaxCoords = ConUt.getTerminalMaxCoord();
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
         //
-        this.defaultColor = ConWinOut.DEFAULT_FONT_COLOR;
-        this.defaultBackground = ConWinOut.DEFAULT_BACKGROUND;
+        this.zoneBrush = new ConWinOutBrush();
     }
     
     /**
@@ -223,11 +203,9 @@ public class ConWinOut implements WinBufEventListener
         if ( WinBufEventType.ON_BEFORE_FLUSH == eventType ) {
             this.onBeforeFlush(event);
         }
-        /* do not need now
         if ( WinBufEventType.ON_AFTER_FLUSH == eventType ) {
             this.onAfterFlush(event);
         }
-        */
         //
         /* do not need now
         if ( WinBufEventType.ON_BEFORE_AUTOFLUSH == eventType ) {
@@ -307,6 +285,9 @@ public class ConWinOut implements WinBufEventListener
         // here in the flag we have string length evaluation
         final int outStrLength = event.getEventFlags();
         //
+        // keep coordinates and style of output before output
+        this.zoneBrush.saveTerminalState();
+        //
         final int alreadyPrintedLength = this.zoneCursorPos.getX();
         //
         if ( alreadyPrintedLength + outStrLength > this.zoneWidth ) {
@@ -326,12 +307,20 @@ public class ConWinOut implements WinBufEventListener
         }
     }
     
-    /* do not need now
+    /**
+     * Reaction after the 'flush' operation.
+     * Is called after every single portion of printing to the console.
+     * @param event 
+     */
     private void onAfterFlush(final WinBufEvent event) {
         final String outStr = event.getEventText();
         final int outStrLength = event.getEventFlags();
+        //
+        // after the output we return to the style conditions
+        // of terminal (it had before output)
+        this.zoneBrush.restoreTerminalState();
     }
-    */
+    
     
     
     /* do not need now
@@ -378,7 +367,8 @@ public class ConWinOut implements WinBufEventListener
     
     /**
      * Reaction after the character was put into console.
-     * Must recalculate current cursor position in the zone.
+     * Must recalculate current cursor position in the zone,
+     * and then save the output which had happened.
      * @param event 
      */
     private void OnAfterOutputChar(final WinBufEvent event) {
@@ -558,16 +548,16 @@ public class ConWinOut implements WinBufEventListener
     private void takeTerminalCursorPosition() throws OutOfTerminalWindowException {
         ConCord curTerminalPos = this.getTerminalZonePos();
         //
-        if ( curTerminalPos.getX() > this.terminalMaxCoords.getX()
-                || curTerminalPos.getY() > this.terminalMaxCoords.getY() ) {
+        if ( curTerminalPos.getX() > Term.get().maxX()
+                || curTerminalPos.getY() > Term.get().maxY() ) {
             String excMsg = "Cannot move away from terminal window."
                                 + " Need to move cursor to: " + curTerminalPos
-                                + ", maximum coordinates are: " + this.terminalMaxCoords;
-            final int excX = (curTerminalPos.getX() > this.terminalMaxCoords.getX())
-                                ? this.terminalMaxCoords.getX()
+                                + ", maximum coordinates are: " + Term.get().maxCoord();
+            final int excX = (curTerminalPos.getX() > Term.get().maxX())
+                                ? Term.get().maxX()
                                 : curTerminalPos.getX();
-            final int excY = (curTerminalPos.getY() > this.terminalMaxCoords.getY())
-                                ? this.terminalMaxCoords.getY()
+            final int excY = (curTerminalPos.getY() > Term.get().maxY())
+                                ? Term.get().maxY()
                                 : curTerminalPos.getY();
             ConCord excCoords = new ConCord(excX, excY);
             //
@@ -688,10 +678,9 @@ public class ConWinOut implements WinBufEventListener
      * Cover all the zone with the the default colors and an empty char.
      */
     private void clearZone() {
-        final String EMPTY_CHAR = " ";
-        final ConDrawFill clearFill = new ConDrawFill(this.defaultBackground,
-                                                        EMPTY_CHAR,
-                                                        this.defaultColor);
+        final ConDrawFill clearFill = new ConDrawFill(this.zoneBrush.getFillingColor(),
+                                                        Term.EMPTY_CHAR,
+                                                        this.zoneBrush.getFillingColor());
         this.fillZone(clearFill);
     }
     
