@@ -286,7 +286,7 @@ public class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
         //
         // keep coordinates and style of output before output
-        this.zoneBrush.saveTerminalState();
+        Term.get().save();
         //
         final int alreadyPrintedLength = this.zoneCursorPos.getX();
         //
@@ -317,8 +317,8 @@ public class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
         //
         // after the output we return to the style conditions
-        // of terminal (it had before output)
-        this.zoneBrush.restoreTerminalState();
+        // of terminal (it had been saved before output)
+        Term.get().restore();
     }
     
     
