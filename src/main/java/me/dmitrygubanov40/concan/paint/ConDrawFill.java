@@ -31,9 +31,9 @@ public class ConDrawFill
     
     
     static {
-        DEFAULT_COLOR = ConCol.WHITE;
+        DEFAULT_COLOR = Term.get().background8B();
         DEFAULT_BRUSH = Term.EMPTY_CHAR;
-        DEFAULT_BRUSH_COLOR = ConCol.BLACK;
+        DEFAULT_BRUSH_COLOR = Term.get().color8B();
         BRUSH_LENGTH_ALLOWED = 1;
     }
     
@@ -52,7 +52,7 @@ public class ConDrawFill
     // additional texture color (analog)
     private ConCol brushColor;
     
-    //
+    // applied styles (with mutual block of opposite styles)
     private ArrayList<ConStyles> styles;
     
     //////////
