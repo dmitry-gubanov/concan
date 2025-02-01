@@ -193,4 +193,19 @@ public class Term
     
     
     
+    /**
+     * Terminal-based saving of all styles and conditions.
+     */
+    public void save() {
+        System.out.print(ConUt.SAVE);
+    }
+    /**
+     * Terminal-based restoration of all styles and conditions.
+     */
+    public void restore() {
+        System.out.print(ConUt.RESTORE);
+    }
+    
+    
+    
 }
