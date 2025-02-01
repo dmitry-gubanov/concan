@@ -96,6 +96,7 @@ public class WindowOutputBuffer
     /**
      * Write down all regex expressions to cover all escape sequences
      * we consider to be valid and executable.
+     * Only such commands can be transmitted into the buffer.
      */
     private static void initValidCommandsRegex() {
         String[] validCmds = {
