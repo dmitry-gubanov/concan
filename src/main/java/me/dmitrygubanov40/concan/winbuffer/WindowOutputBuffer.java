@@ -81,7 +81,7 @@ public class WindowOutputBuffer
      * So, ignore 'ESC' from direct array from ConUt.
      */
     private static void initCmdCharacters() {
-        cmdCharacters.add(ConUt.ESC);// first direct adding of primary 'ESC'
+        WindowOutputBuffer.cmdCharacters.add(ConUt.ESC);// first direct adding of primary 'ESC'
         //
         char[] specialChars = ConUt.getSpecialAsciiCodes();
         for ( char curSpecChar : specialChars ) {
@@ -89,7 +89,7 @@ public class WindowOutputBuffer
             // ignore 'ESC' added first directly:
             if ( curSpecCharStr.equals(ConUt.ESC) ) continue;
             //
-            cmdCharacters.add(curSpecCharStr);
+            WindowOutputBuffer.cmdCharacters.add(curSpecCharStr);
         }
     }
     
@@ -111,7 +111,7 @@ public class WindowOutputBuffer
             // all lines must start as 'ESC' + '[':
             String regexToAdd = "\033\\["
                                 + curExpression;
-            validCommands.add(regexToAdd);
+            WindowOutputBuffer.validCommands.add(regexToAdd);
         }
     }
     
@@ -132,7 +132,7 @@ public class WindowOutputBuffer
             // all banned commands must start with 'ESC' + '[':
             String regexToAdd = "\033\\["
                                 + curExpression;
-            bannedCommands.add(regexToAdd);
+            WindowOutputBuffer.bannedCommands.add(regexToAdd);
         }
         // add here banned characters if necessary
         // ...
