@@ -41,20 +41,14 @@ class UtilityEngine
     }
     
     
+    ////////////////////
+    
+    
     // whether to use rapid output of all buffer or output each symbol or command
     protected OutputBuffer buffer;
     
     
     ////////////////////
-    
-    
-    /**
-     * @return do we currently use the buffer?
-     */
-    public boolean isBuffering() {
-        return (null != this.buffer);
-    }
-    
     
     
     /**
@@ -81,7 +75,7 @@ class UtilityEngine
      */
     private static void initEscCommands() {
         // Cursor control functions:
-        UtilityEngine.escCommands.put("HOME",        "H");      // move cursor to the home position (1, 1)
+        UtilityEngine.escCommands.put("HOME",        "H");      // move cursor to the home position [1, 1], (0, 0) in coordinates
         UtilityEngine.escCommands.put("GOTO",        "#;#H");   // move cursor to the position (#1, #2) /Y, X/
         UtilityEngine.escCommands.put("UP",          "#A");     // move cursor up for # lines (Y) if possible, X is kept
         UtilityEngine.escCommands.put("DOWN",        "#B");     // move cursor down for # lines (Y) if possible, X is kept
@@ -235,69 +229,6 @@ class UtilityEngine
     }
     
     
-    ////////////////////
-    
-    
-    /**
-     * Simple output (when buffer is not used).
-     * Ignores empty string.
-     * @param charStr text to be simply printed in console
-     */
-    private void output(final String charStr) {
-        if ( charStr.length() <= 0 ) {
-            return;
-        }
-        //
-        System.out.print(charStr);
-    }
-    
-    /**
-     * Send text to buffer (in case we are buffering) or directly to console output otherwise.
-     * Ignores empty string.
-     * @param txtToSend text ready to be outputted
-     * @param wholeMode flag to send 'txtToSend' as-is, guaranteeing it would not be separated
-     */
-    private void send(final String txtToSend, final boolean wholeMode) {
-        if ( txtToSend.length() <= 0 ) {
-            return;
-        }
-        //
-        if ( this.isBuffering() ) {
-            // add to the initialized buffer
-            if ( wholeMode )    this.buffer.addWhole(txtToSend);
-            else                this.buffer.add(txtToSend);
-            //
-        } else {
-            // direct output of the symbol, always - 'as-is' (whole mode)
-            this.output(txtToSend);
-        }
-    }
-    private void send(final String txtToSend) {
-        this.send(txtToSend, false);
-    }
-    
-    
-    
-    /**
-     * Base wrapper for sending direct ASCII operations.
-     * @param charName codename of character from ASCII table (charAsciiCodes)
-     * @param iterations how many times the command symbol will be sent
-     * @throws IllegalArgumentException with incorrect number of iterations
-     */
-    protected void sendAsciiChar(final String charName, final int iterations) throws IllegalArgumentException {
-        if ( iterations <= 0 ) {
-            String excMsg = "Number of iteraions for '" + charName + "'-char must be positive,"
-                               + " but is '" + iterations + "'";
-            throw new IllegalArgumentException(excMsg);
-        }
-        //
-        for ( int i = 0; i < iterations; i++ ) {
-            String charStr = UtilityEngine.getStrCharByName(charName);
-            this.send(charStr);
-        }
-    }
-    
-    
     
     /**
      * @param cmd command (sequence) raw macros (like '38;2;#;#;#m').
@@ -316,7 +247,7 @@ class UtilityEngine
     private static String getFullStrEscCmd(String cmd) {
         // Here is 'magic' like "ESC" + "[" + "2J"
         String escCmd = UtilityEngine.getStrCharByName("ESC")
-                        + ESC_CMD_SEPARATOR
+                        + UtilityEngine.ESC_CMD_SEPARATOR
                         + cmd;
         //
         return escCmd;
@@ -343,19 +274,35 @@ class UtilityEngine
     }
     
     /**
-     * Connect all the parts of command/sequence and send it to the buffer/output.
+     * Connect all the parts of command/sequence into the string line.
      * @param cmdCode base part of a command (like "H" or "2J")
      * @param params possible extra arguments (to replace '#'-s)
+     * @return string with final Esc-command (ready to print in console)
+     * @throws IllegalArgumentException when number of parameters in command is inappropriate
      */
-    protected void sendEscCmd(final String cmdCode, final Integer... params) {
+    protected static String getEscCmd(final String cmdCode, final Integer... params)
+                                throws IllegalArgumentException {
         String cmd = UtilityEngine.getStrEscCmdByName(cmdCode);
-        if ( !this.checkEscCmdArguments(cmd, params) ) return;// in case parameters are incorrect do nothing
-        cmd = this.replaceEscCmdArguments(cmd, params);
         //
+        if ( !UtilityEngine.checkEscCmdArguments(cmd, params) ) {
+            String excMsg = "Incorrect number of arguments in command (escape sequence)";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        cmd = UtilityEngine.replaceEscCmdArguments(cmd, params);
         String escCmd = UtilityEngine.getFullStrEscCmd(cmd);
         //
+        return escCmd;
+    }
+    
+    /**
+     * Send full ready command string to the buffer/output.
+     * @param escCmd base part of a command (like "H" or "2J")
+     */
+    protected void sendEscCmd(final String escCmd) {
         // all the command (sequence) will be shown at a single moment
         final boolean sendEscCmdInWhole = true;
+        //
         this.send(escCmd, sendEscCmdInWhole);
     }
     
@@ -365,7 +312,7 @@ class UtilityEngine
      * @param params possible extra arguments (for '#'-s)
      * @return 'true' when arguments correspond each other ('#'-hashes and 'params')
      */
-    private boolean checkEscCmdArguments(final String cmd, final Integer... params) {
+    private static boolean checkEscCmdArguments(final String cmd, final Integer... params) {
         // count number of '#' in command string
         int hashCount = UtilityEngine.getNmbOfEscCmdParams(cmd);
         //
@@ -380,7 +327,7 @@ class UtilityEngine
      * @param params list of possible extra argument (for the '#'-s)
      * @return string with actual parameters (if any)
      */
-    private String replaceEscCmdArguments(final String cmd, final Integer... params) {
+    private static String replaceEscCmdArguments(final String cmd, final Integer... params) {
         if ( 0 == params.length ) {
             return cmd;
         }
@@ -388,12 +335,85 @@ class UtilityEngine
         StringBuilder finalCmd = new StringBuilder(cmd);
         //
         for ( Integer currentParam : params ) {
-            int currentHashIndex = finalCmd.indexOf(ESC_CMD_PARAM);
+            int currentHashIndex = finalCmd.indexOf(UtilityEngine.ESC_CMD_PARAM);
             finalCmd.deleteCharAt(currentHashIndex);
             finalCmd.insert(currentHashIndex, currentParam.toString());
         }
         //
         return finalCmd.toString();
+    }
+    
+    
+    ///////////////////////////////////
+    
+    
+    /**
+     * @return do we currently use the buffer?
+     */
+    public boolean isBuffering() {
+        return (null != this.buffer);
+    }
+    
+    
+    
+    /**
+     * Simple output (when buffer is not used).
+     * Ignores empty string.
+     * @param charStr text to be simply printed in console
+     */
+    private void output(final String charStr) {
+        if ( charStr.length() <= 0 ) {
+            return;
+        }
+        //
+        System.out.print(charStr);
+    }
+    
+    
+    
+    /**
+     * Send text to buffer (in case we are buffering) or directly to console output otherwise.
+     * Ignores empty string.
+     * @param txtToSend text ready to be outputted
+     * @param wholeMode flag to send 'txtToSend' as-is, guaranteeing it would not be separated
+     */
+    private void send(final String txtToSend, final boolean wholeMode) {
+        if ( txtToSend.length() <= 0 ) {
+            return;
+        }
+        //
+        if ( this.isBuffering() ) {
+            // add to the initialized buffer
+            if ( wholeMode )    this.buffer.addWhole(txtToSend);
+            else                this.buffer.add(txtToSend);
+            //
+        } else {
+            // direct output of the symbol, always - 'as-is' (whole mode)
+            this.output(txtToSend);
+        }
+    }
+    private void send(final String txtToSend) {
+        this.send(txtToSend, false);
+    }
+    
+    /**
+     * Base wrapper for sending direct ASCII operations.
+     * @param charName codename of character from ASCII table (charAsciiCodes)
+     * @param iterations how many times the command symbol will be sent
+     * @throws IllegalArgumentException with incorrect number of iterations
+     */
+    protected void sendAsciiChar(final String charName, final int iterations)
+                        throws IllegalArgumentException {
+        if ( iterations <= 0 ) {
+            String excMsg = "Number of iteraions for '" + charName + "'-char must be positive,"
+                               + " but is '" + iterations + "'";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        for ( int i = 0; i < iterations; i++ ) {
+            String charStr = UtilityEngine.getStrCharByName(charName);
+            this.send(charStr);
+        }
     }
     
     
