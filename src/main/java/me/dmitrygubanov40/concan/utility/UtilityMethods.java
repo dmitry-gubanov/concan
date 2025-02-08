@@ -191,8 +191,12 @@ public class UtilityMethods extends UtilityEscCommands
             return CONSOLE_DEFAULT_SIZE;
         }
         //
-        ConUt conTool = new ConUt();
-        conTool.sendGoto(CONSOLE_MAX_SIZE);
+        // Here we use low-level console 'goto' because Terminal can be not initialized yet
+        // (and max coordinates are still empty).
+        final String lowLvlGoto = UtilityMethods.getEscCmd("GOTO",
+                                                            CONSOLE_MAX_SIZE.getY(),
+                                                            CONSOLE_MAX_SIZE.getX());
+        System.out.print(lowLvlGoto);
         ConCord consoleMaxCoord = UtilityMethods.getCursorPosition();
         //
         return consoleMaxCoord;
