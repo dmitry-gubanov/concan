@@ -287,6 +287,8 @@ public class ConWinOut implements WinBufEventListener
         //
         // keep coordinates and style of output before output
         Term.get().save();
+        // restore brush settings - output necessary commands
+        this.zoneBrush.restore();
         //
         final int alreadyPrintedLength = this.zoneCursorPos.getX();
         //
@@ -313,8 +315,8 @@ public class ConWinOut implements WinBufEventListener
      * @param event 
      */
     private void onAfterFlush(final WinBufEvent event) {
-        final String outStr = event.getEventText();
-        final int outStrLength = event.getEventFlags();
+        //final String outStr = event.getEventText();
+        //final int outStrLength = event.getEventFlags();
         //
         // after the output we return to the style conditions
         // of terminal (it had been saved before output)
@@ -401,10 +403,29 @@ public class ConWinOut implements WinBufEventListener
      * Reaction after the command (special char/ESC-sequence)
      * was put into console.
      * After command we do not need to move cursor in the zone.
+     * The last output will keep the style and color of output.
      * @param event 
      */
     private void OnAfterOutputCmd(final WinBufEvent event) {
-        // ...
+        final String outStr = event.getEventText();
+        final int outStrLength = event.getEventFlags();
+        //
+        // check the cmd which was out - is it a font color or a font background?
+        if ( ConWinOutBrush.isColorEscCommand(outStr) ) {
+            // update font color
+            this.zoneBrush.setBrushColor(outStr);
+            //
+            return;
+            //
+        }
+        if ( ConWinOutBrush.isBackgroundEscCommand(outStr) ) {
+            // update font background
+            this.zoneBrush.setBrushBackground(outStr);
+            //
+            return;
+            //
+        }
+        //
     }
     
     
