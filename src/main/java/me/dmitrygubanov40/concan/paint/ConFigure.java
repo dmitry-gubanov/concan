@@ -19,4 +19,12 @@ public abstract class ConFigure
      */
     public abstract ArrayList<ConCord> getCoords();
     
+    /**
+     * If we need special chars for drawing (borders or some kind of algorithm).
+     * Empty list means no special symbol (use from filling),
+     * 'null' in list means to skip character with default filling brush.
+     * @return chars for each coordinate from 'getCoords()', or empty list
+     */
+    public abstract ArrayList<Character> getSymbols();
+    
 }

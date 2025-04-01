@@ -96,18 +96,30 @@ public class ConDraw
      * Avoiding console borders, i.e. do not move new line when we have met end of console.
      * Use for all other drawings, which must prepare only coordinates.
      * @param coords all console positions we should paint
+     * @param symbols special characters if necessary
      * @param fill parameters of filling
      * @throws NullPointerException if empty coordinates or filling parameters
+     * @throws IllegalArgumentException when 'coords' and 'symbols' are inappropriate
      */
-    private static void doDraw(final ArrayList<ConCord> coords, final ConDrawFill fill)
+    private static void doDraw(final ArrayList<ConCord> coords,
+                                final ArrayList<Character> symbols,
+                                final ConDrawFill fill)
                             throws NullPointerException {
         if ( null == coords ) {
             String excMsg = "No coordinates for drawing";
             throw new NullPointerException(excMsg);
         }
+        if ( null == symbols ) {
+            String excMsg = "No symbols for drawing";
+            throw new NullPointerException(excMsg);
+        }
         if ( null == fill ) {
             String excMsg = "No filling parameters for drawing";
             throw new NullPointerException(excMsg);
+        }
+        if ( !symbols.isEmpty() && symbols.size() != coords.size() ) {
+            String excMsg = "Number of coordinates and symbols discrods";
+            throw new IllegalArgumentException(excMsg);
         }
         //
         ConUt conTool = new ConUt();
@@ -128,7 +140,8 @@ public class ConDraw
         }
         //
         // main drawing:
-        for ( ConCord curDrawPoint : coords ) {
+        for ( int i = 0; i < coords.size(); i++ ) {
+            ConCord curDrawPoint = coords.get(i);
             //
             // preventer of leaving terminal window
             if ( curDrawPoint.getX() > Term.get().maxX()
@@ -136,8 +149,13 @@ public class ConDraw
                 continue;
             }
             //
+            String curBrush = fill.getBrush();
+            if ( !symbols.isEmpty() && null != symbols.get(i) ) {
+                curBrush = symbols.get(i).toString();
+            }
+            //
             conTool.sendGoto(curDrawPoint);
-            System.out.print(fill.getBrush());
+            System.out.print(curBrush);
         }
         //
         // restore cursor:
@@ -155,9 +173,14 @@ public class ConDraw
             String excMsg = "Where is no figure to draw";
             throw new NullPointerException(excMsg);
         }
+        if ( null == fill ) {
+            String excMsg = "Where is no fillment for the figure to draw";
+            throw new NullPointerException(excMsg);
+        }
         //
         ArrayList<ConCord> coordsToDraw = figureToDraw.getCoords();
-        ConDraw.doDraw(coordsToDraw, fill);
+        ArrayList<Character> charactersToDraw = figureToDraw.getSymbols();
+        ConDraw.doDraw(coordsToDraw, charactersToDraw, fill);
     }
     
     

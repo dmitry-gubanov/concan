@@ -54,4 +54,12 @@ public class ConRect extends ConFigure
         return coords;
     }
     
+    @Override
+    public ArrayList<Character> getSymbols() {
+        ArrayList<Character> noSymbolsNecessary = new ArrayList<>();
+        return noSymbolsNecessary;
+    }
+    
+    
+    
 }
