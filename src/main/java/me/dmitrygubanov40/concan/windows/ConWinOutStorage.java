@@ -9,7 +9,7 @@ import me.dmitrygubanov40.concan.utility.ConUt;
 
 /**
  * Buffer (archive) of output characters, passed in the window.
- * Collect data, automatically cut off 
+ * Just collect data.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
 class ConWinOutStorage
