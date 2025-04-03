@@ -289,8 +289,97 @@ public class ConDraw
     // end of Rect //
     
     
+    // Rectangles with borders (borders) //
+    
+    /**
+     * Most wide console any border drawer.
+     * Independent from 'staticFill'.
+     * @param type border type (bold, double, etc.)
+     * @param leftTop start coordinate (presume)
+     * @param rightBottom end coordinate (presume)
+     * @param fill filling's data
+     */
+    public static void border(final ConBorderRectType type,
+                                final ConCord leftTop,
+                                final ConCord rightBottom,
+                                final ConDrawFill fill) {
+        ConFigure border;
+        border = new ConBorderRect(leftTop, rightBottom, type);
+        ConDraw.draw(border, fill);
+    }
+    // default single-line version:
+    public static void border(final ConCord leftTop,
+                                        final ConCord rightBottom,
+                                        final ConDrawFill fill) {
+        ConDraw.border(ConBorderRectType.SINGLE, leftTop, rightBottom, fill);
+    }
+    
+    /**
+     * Full arguments for any border's version.
+     * @param type border type (bold, double, etc.)
+     * @param leftTop start coordinate (presume)
+     * @param rightBottom end coordinate (presume)
+     * @param color main color
+     * @param brushColor brush char texture color
+     */
+    public static void border(final ConBorderRectType type,
+                                final ConCord leftTop,
+                                final ConCord rightBottom,
+                                final ConCol color,
+                                final ConCol brushColor) {
+        // no need of brush
+        ConDrawFill fillingObj = new ConDrawFill(color, "", brushColor);
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        ConDraw.border(type, leftTop, rightBottom, fillingObj);
+    }
+    // default single-line version:
+    public static void border(final ConCord leftTop,
+                                final ConCord rightBottom,
+                                final ConCol color,
+                                final ConCol brushColor) {
+        // no need of brush
+        ConDrawFill fillingObj = new ConDrawFill(color, "", brushColor);
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        ConDraw.border(leftTop, rightBottom, fillingObj);
+    }
+    
+    
+    public static void border(final ConBorderRectType type,
+                                final ConCord leftTop,
+                                final ConCord rightBottom,
+                                final ConCol color) {
+        final ConCol rectBrushColor = ConDraw.staticFill.getBrushConCol();
+        ConDrawFill fillingObj = new ConDrawFill(color, "", rectBrushColor);
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        //
+        ConDraw.border(type, leftTop, rightBottom, fillingObj);
+    }
+    // default single-line version:
+    public static void border(final ConCord leftTop,
+                                final ConCord rightBottom,
+                                final ConCol color) {
+        final ConCol rectBrushColor = ConDraw.staticFill.getBrushConCol();
+        ConDrawFill fillingObj = new ConDrawFill(color, "", rectBrushColor);
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        //
+        ConDraw.border(leftTop, rightBottom, fillingObj);
+    }
+    
+    public static void border(final ConBorderRectType type,final ConCord leftTop, final ConCord rightBottom) {
+        ConDraw.border(type, leftTop, rightBottom, ConDraw.staticFill);
+    }
+    // default single-line version:
+    public static void border(final ConCord leftTop, final ConCord rightBottom) {
+        ConDraw.border(leftTop, rightBottom, ConDraw.staticFill);
+    }
+    
+    // end of rectangles with borders (borders) //
+    
+    
     
     ////////////
+    
+    
     
     // object's brush fields
     public ConDrawFill currentFill;
@@ -342,6 +431,25 @@ public class ConDraw
                             final ConCord rightBottom) {
         ConFigure rect = new ConRect(leftTop, rightBottom);
         this.drawFigure(rect);
+    }
+    
+    
+    
+    /**
+     * Make the object to draw the single border rectangle.
+     * @param borderType requested border type
+     * @param leftTop start coordinate (presume)
+     * @param rightBottom end coordinate (presume)
+     */
+    public void drawBorderRect(final ConBorderRectType borderType,
+                                    final ConCord leftTop,
+                                    final ConCord rightBottom) {
+        ConFigure singleBorderRect = new ConBorderRect(leftTop, rightBottom, borderType);
+        this.drawFigure(singleBorderRect);
+    }
+    public void drawBorderRect(final ConCord leftTop,
+                                    final ConCord rightBottom) {
+        this.drawBorderRect(ConBorderRectType.SINGLE, leftTop, rightBottom);
     }
     
     
