@@ -67,7 +67,7 @@ public enum ConBorderRectType
      * @return necessary character for the border
      */
     public Character getBorderSymbol(ConBorderRectLineType borderRectLineType) {
-        Character[] outBorderSymbols = ConBorderRectType.BORDER_LINES.get(this.ordinal());
+        Character[] outBorderSymbols = ConBorderRectType.BORDER_LINES.get( this.ordinal() );
         Character outBorderChar = outBorderSymbols[ borderRectLineType.ordinal() ];
         //
         return outBorderChar;
