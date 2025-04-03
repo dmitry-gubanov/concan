@@ -14,10 +14,10 @@ public class ConRect extends ConFigure
 {
     
     // presume start point of bar coordinates
-    private final ConCord leftTop;
+    protected final ConCord leftTop;
     
     // presume end point of bar coordinates
-    private final ConCord rightBottom;
+    protected final ConCord rightBottom;
     
     //////////////
     
