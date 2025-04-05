@@ -17,7 +17,7 @@ import me.dmitrygubanov40.concan.winbuffer.*;
  * Essential part of any window with inner refreshment.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class ConWinOut implements WinBufEventListener
+class ConWinOut implements WinBufEventListener
 {
     
     // console manipulation helper
