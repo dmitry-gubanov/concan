@@ -1,7 +1,6 @@
 package me.dmitrygubanov40.concan.paint;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * All possible types of border are collected here.
@@ -10,17 +9,22 @@ import java.util.HashMap;
 public enum ConBorderRectType
 {
     
+    NONE    ("none"),
+    SPACE   ("space"),
     SINGLE  ("single"),
     DOUBLE  ("double"),
     BOLD    ("bold");
     
     //////////////////
     
+    // NONE-option can be used for 'no-border' (not to draw anything at all)
+    private static final Character[] NONE_BORDER_LINES;
+    private static final Character[] SPACE_BORDER_LINES;
     private static final Character[] SINGLE_BORDER_LINES;
     private static final Character[] DOUBLE_BORDER_LINES;
     private static final Character[] BOLD_BORDER_LINES;
     
-    private static final ArrayList<Character[]> BORDER_LINES;
+    private static final ArrayList< Character[] > BORDER_LINES;
     
     static {
         /**
@@ -33,12 +37,17 @@ public enum ConBorderRectType
          * 6 - vertical top line char
          * 7 - vertical bottom line char
          */
-        SINGLE_BORDER_LINES     = new Character[] {'┌', '┐', '└', '┘', '─', '─', '│', '│'};
-        DOUBLE_BORDER_LINES     = new Character[] {'╔', '╗', '╚', '╝', '═', '═', '║', '║'};
-        BOLD_BORDER_LINES       = new Character[] {'┏', '┓', '┗', '┛', '━', '━', '┃', '┃'};
+        final Character NIL = Character.MIN_VALUE;// no-character no-border
+        NONE_BORDER_LINES       = new Character[] { NIL, NIL, NIL, NIL, NIL, NIL, NIL, NIL };
+        SPACE_BORDER_LINES      = new Character[] { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+        SINGLE_BORDER_LINES     = new Character[] { '┌', '┐', '└', '┘', '─', '─', '│', '│' };
+        DOUBLE_BORDER_LINES     = new Character[] { '╔', '╗', '╚', '╝', '═', '═', '║', '║' };
+        BOLD_BORDER_LINES       = new Character[] { '┏', '┓', '┗', '┛', '━', '━', '┃', '┃' };
         //
         BORDER_LINES = new ArrayList<>();
         // borders are added the same order as they appeared in static area
+        BORDER_LINES.add(NONE_BORDER_LINES);
+        BORDER_LINES.add(SPACE_BORDER_LINES);
         BORDER_LINES.add(SINGLE_BORDER_LINES);
         BORDER_LINES.add(DOUBLE_BORDER_LINES);
         BORDER_LINES.add(BOLD_BORDER_LINES);
