@@ -65,7 +65,7 @@ public class Term
         this.maxCoords = ConUt.getTerminalMaxCoord();
         this.maxSize = ConUt.getTerminalSize();
         //
-        this.updateColors(DEFAULT_COLOR, DEFAULT_BACKGROUND);
+        this.resetColors();
     }
     
     
@@ -204,6 +204,15 @@ public class Term
      */
     public void restore() {
         System.out.print(ConUt.RESTORE);
+    }
+    
+    
+    
+    /**
+     * Load into the Terminal default colors.
+     */
+    final public void resetColors() {
+        this.updateColors(DEFAULT_COLOR, DEFAULT_BACKGROUND);
     }
     
     
