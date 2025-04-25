@@ -223,8 +223,8 @@ public class ConDraw
                             final ConCord rightBottom,
                             final ConCol color) {
         final String barBrush = ConDraw.staticFill.getBrush();
-        final ConCol barBrushColor = ConDraw.staticFill.getBrushConCol();
-        ConDrawFill fillingObj = new ConDrawFill(color, barBrush, barBrushColor);
+        final Color barBrushColor = ConDraw.staticFill.getBrushColor();
+        ConDrawFill fillingObj = new ConDrawFill(color.getTrueColor(), barBrush, barBrushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         //
         ConDraw.bar(leftTop, rightBottom, fillingObj);
@@ -275,8 +275,8 @@ public class ConDraw
                             final ConCord rightBottom,
                             final ConCol color) {
         final String rectBrush = ConDraw.staticFill.getBrush();
-        final ConCol rectBrushColor = ConDraw.staticFill.getBrushConCol();
-        ConDrawFill fillingObj = new ConDrawFill(color, rectBrush, rectBrushColor);
+        final Color rectBrushColor = ConDraw.staticFill.getBrushColor();
+        ConDrawFill fillingObj = new ConDrawFill(color.getTrueColor(), rectBrush, rectBrushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         //
         ConDraw.rect(leftTop, rightBottom, fillingObj);
@@ -328,7 +328,8 @@ public class ConDraw
                                 final ConCol color,
                                 final ConCol brushColor) {
         // no need of brush
-        ConDrawFill fillingObj = new ConDrawFill(color, "", brushColor);
+        final String noBrushForBorder = " ";
+        ConDrawFill fillingObj = new ConDrawFill(color, noBrushForBorder, brushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         ConDraw.border(type, leftTop, rightBottom, fillingObj);
     }
@@ -338,7 +339,8 @@ public class ConDraw
                                 final ConCol color,
                                 final ConCol brushColor) {
         // no need of brush
-        ConDrawFill fillingObj = new ConDrawFill(color, "", brushColor);
+        final String noBrushForBorder = " ";
+        ConDrawFill fillingObj = new ConDrawFill(color, noBrushForBorder, brushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         ConDraw.border(leftTop, rightBottom, fillingObj);
     }
@@ -348,8 +350,9 @@ public class ConDraw
                                 final ConCord leftTop,
                                 final ConCord rightBottom,
                                 final ConCol color) {
-        final ConCol rectBrushColor = ConDraw.staticFill.getBrushConCol();
-        ConDrawFill fillingObj = new ConDrawFill(color, "", rectBrushColor);
+        final Color rectBrushColor = ConDraw.staticFill.getBrushColor();
+        final String noBrushForBorder = " ";
+        ConDrawFill fillingObj = new ConDrawFill(color.getTrueColor(), noBrushForBorder, rectBrushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         //
         ConDraw.border(type, leftTop, rightBottom, fillingObj);
@@ -358,8 +361,9 @@ public class ConDraw
     public static void border(final ConCord leftTop,
                                 final ConCord rightBottom,
                                 final ConCol color) {
-        final ConCol rectBrushColor = ConDraw.staticFill.getBrushConCol();
-        ConDrawFill fillingObj = new ConDrawFill(color, "", rectBrushColor);
+        final Color rectBrushColor = ConDraw.staticFill.getBrushColor();
+        final String noBrushForBorder = " ";
+        ConDrawFill fillingObj = new ConDrawFill(color.getTrueColor(), noBrushForBorder, rectBrushColor);
         fillingObj.copyStyles(ConDraw.staticFill.getStyles());
         //
         ConDraw.border(leftTop, rightBottom, fillingObj);
@@ -375,6 +379,58 @@ public class ConDraw
     
     // end of rectangles with borders (borders) //
     
+    
+    // Label //
+    
+    /**
+     * Most wide console label drawer.
+     * Independent from 'staticFill'.
+     * @param leftTop start text position
+     * @param labelCaption text to be put
+     * @param fill filling's data of the rectangle's line
+     */
+    public static void label(final ConCord leftTop,
+                                final String labelCaption,
+                                final ConDrawFill fill) {
+        ConFigure rect = new ConLabel(leftTop, labelCaption);
+        ConDraw.draw(rect, fill);
+    }
+    
+    /**
+     * Full arguments label version.
+     * @param leftTop start text position
+     * @param labelCaption text to be put
+     * @param textColor text color
+     * @param backgroundColor text background color
+     */
+    public static void label(final ConCord leftTop,
+                                final String labelCaption,
+                                final ConCol textColor,
+                                final ConCol backgroundColor) {
+        final String noBrushForLabel = " ";
+        ConDrawFill fillingObj = new ConDrawFill(backgroundColor,
+                                                    noBrushForLabel,
+                                                    textColor);
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        ConDraw.label(leftTop, labelCaption, fillingObj);
+    }
+    //
+    public static void label(final ConCord leftTop,
+                                final String labelCaption,
+                                final ConCol textColor) {
+        final String labelBrush = ConDraw.staticFill.getBrush();// no real usage
+        final Color backgroundColor = ConDraw.staticFill.getColor();
+        ConDrawFill fillingObj = new ConDrawFill(backgroundColor, labelBrush, textColor.getTrueColor());
+        fillingObj.copyStyles(ConDraw.staticFill.getStyles());
+        //
+        ConDraw.label(leftTop, labelCaption, fillingObj);
+    }
+    //
+    public static void label(final ConCord leftTop, final String labelCaption) {
+        ConDraw.label(leftTop, labelCaption, ConDraw.staticFill);
+    }
+    
+    // end of Label //
     
     
     ////////////
@@ -451,6 +507,19 @@ public class ConDraw
                                     final ConCord rightBottom) {
         this.drawBorderRect(ConBorderRectType.SINGLE, leftTop, rightBottom);
     }
+    
+    
+    
+    /**
+     * Make the object to draw the single line text label into the console.
+     * @param leftTop label's position
+     * @param text label's caption
+     */
+    public void drawLabel(final ConCord leftTop, final String text) {
+        ConFigure label = new ConLabel(leftTop, text);
+        this.drawFigure(label);
+    }
+    
     
     
 }
