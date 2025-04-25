@@ -20,20 +20,20 @@ public class ConDrawFill
 {
     
     // base color from start
-    private static final ConCol DEFAULT_COLOR;
+    private static final Color DEFAULT_COLOR;
     // what we put as a texture for the brush
     private static final String DEFAULT_BRUSH;
     // brush color
-    private static final ConCol DEFAULT_BRUSH_COLOR;
+    private static final Color DEFAULT_BRUSH_COLOR;
     
     // the only length of brush string
     private static final int BRUSH_LENGTH_ALLOWED;
     
     
     static {
-        DEFAULT_COLOR = Term.get().background8B();
+        DEFAULT_COLOR = Term.get().background();
         DEFAULT_BRUSH = Term.EMPTY_CHAR;
-        DEFAULT_BRUSH_COLOR = Term.get().color8B();
+        DEFAULT_BRUSH_COLOR = Term.get().color();
         BRUSH_LENGTH_ALLOWED = 1;
     }
     
@@ -70,7 +70,7 @@ public class ConDrawFill
         this.init(initColor, initBrush, initBrushColor);
     }
     public ConDrawFill(final ConCol initColor) {
-        this.init(initColor, DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR);
+        this.init(initColor.getTrueColor(), DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR);
     }
     
     /**
@@ -85,7 +85,7 @@ public class ConDrawFill
         this.init(initTrueColor, initBrush, initBrushTrueColor);
     }
     public ConDrawFill(final Color initTrueColor) {
-        this.init(initTrueColor, DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR.getTrueColor());
+        this.init(initTrueColor, DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR);
     }
     
     /**
