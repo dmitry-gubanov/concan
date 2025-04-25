@@ -476,7 +476,7 @@ class ConWinOut implements WinBufEventListener
                                 final int width,
                                 final int height)
                     throws IllegalArgumentException {
-        if ( null == str || null == coords || str.length() <= 0 ) {
+        if ( null == str || null == coords ) {
             // incorrect arguments
             return;
         }
@@ -509,6 +509,20 @@ class ConWinOut implements WinBufEventListener
     public void printInZone(final String str) {
         // text area w/o clearing in all the zone
         this.printInZone(str, false, new ConCord(0, 0), this.zoneWidth, this.zoneHeight);
+    }
+    
+    /**
+     * Inner function to wipe away the last line in the output zone
+     * (to make it 'clean' before new output).
+     */
+    private void clearLastLine() {
+        final String noLineForClearing = "";
+        final boolean clearBefore = true;
+        final ConCord areaPos = new ConCord(0, this.zoneHeight - 1);// from the begining of last line
+        final int areaWidth = this.zoneWidth;
+        final int areaHeight = 1;// only one line
+        //
+        this.printInZone(noLineForClearing, clearBefore, areaPos, areaWidth, areaHeight);
     }
     
     
@@ -668,6 +682,9 @@ class ConWinOut implements WinBufEventListener
         }
         //
         tempScrollZone.flush();
+        //
+        this.clearLastLine();// letters will be put in clean space
+        //
         //
         this.zoneCursorScrolledDown++;// remember how many lines have been scrolled
         //
