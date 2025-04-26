@@ -707,10 +707,10 @@ class ConWinOut implements WinBufEventListener
         }
         //
         final ConCord leftTop = this.zonePosition;
-        // carefully re-calculate right-bottom coordinates via non-coordinates:
-        final ConCord rightBottomCoordsToAdd = new ConCord(this.zoneWidth - ConCord.SHIFT_X,
-                                                            this.zoneHeight - ConCord.SHIFT_Y);
-        ConCord rightBottom = this.zonePosition.plus(rightBottomCoordsToAdd);
+        // carefully re-calculate right-bottom coordinates via non-coordinates
+        // (zone width and height are not given in math coordinates)
+        final ConCord rightBottomCoordsToAdd = new ConCord(this.zoneWidth, this.zoneHeight).removeConsoleShift();
+        final ConCord rightBottom = this.zonePosition.plus(rightBottomCoordsToAdd);
         // 'ConDraw' saves and restore output styles itself
         ConDraw.bar(leftTop, rightBottom, filling);
     }
