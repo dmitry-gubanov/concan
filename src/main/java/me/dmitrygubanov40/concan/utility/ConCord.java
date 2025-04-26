@@ -28,33 +28,6 @@ public class ConCord
     
     
     /**
-     * Transforms base math coordinates (starting at '0') to console scale.
-     * We use math coordinates usually. Console coordinates are used in raw commands.
-     * @param baseMathCoord starts from '0'
-     * @return new consoleCoord which starts from '1'
-     */
-    public static ConCord addShift(final ConCord baseMathCoord) {
-        final ConCord consoleCoord;
-        consoleCoord = baseMathCoord.plus(ConCord.SHIFT);
-        //
-        return consoleCoord;
-    }
-    /**
-     * Transforms console coordinates (starting at '1') to base math scale.
-     * We use math coordinates usually. Console coordinates are used in raw commands.
-     * @param consoleCoord starts from '1'
-     * @return new consoleCoord which starts from '0'
-     */
-    public static ConCord removeShift(final ConCord consoleCoord) {
-        final ConCord baseMathCoord;
-        baseMathCoord = consoleCoord.minus(ConCord.SHIFT);
-        //
-        return baseMathCoord;
-    }
-    
-    
-    
-    /**
      * Summarize coordinates by each axis.
      * (1, 10) plus (3, 7) -> (4, 17)
      * @param coordsToSum array of coordinates to sum up
@@ -240,6 +213,26 @@ public class ConCord
         ConCord subtrahendToSum = new ConCord(-1 * subtrahend.getX(), -1 * subtrahend.getY());
         //
         return ConCord.getSum(this, subtrahendToSum);
+    }
+    
+    
+    
+    /**
+     * Transforms base math coordinates (starting at '0') to console scale.
+     * We use math coordinates usually. Console coordinates are used in raw commands.
+     * @return new console coordinates which starts from '1' both
+     */
+    public ConCord addConsoleShift() {
+        return this.plus(ConCord.SHIFT);
+    }
+    
+    /**
+     * Transforms console coordinates (starting at '1') to base math scale.
+     * We use math coordinates usually. Console coordinates are used in raw commands.
+     * @return new math coordinates which starts from '0' both
+     */
+    public ConCord removeConsoleShift() {
+        return this.minus(ConCord.SHIFT);
     }
     
     
