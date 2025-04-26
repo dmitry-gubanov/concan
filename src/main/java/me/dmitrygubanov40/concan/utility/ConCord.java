@@ -16,11 +16,40 @@ public class ConCord
     // math coordinate + SHIFT -> console position
     public static final int SHIFT_X;
     public static final int SHIFT_Y;
+    public static final ConCord SHIFT;
     
     static {
         // for position manipulations
         SHIFT_X = 1;
         SHIFT_Y = 1;
+        SHIFT = new ConCord(SHIFT_X, SHIFT_Y);
+    }
+    
+    
+    
+    /**
+     * Transforms base math coordinates (starting at '0') to console scale.
+     * We use math coordinates usually. Console coordinates are used in raw commands.
+     * @param baseMathCoord starts from '0'
+     * @return new consoleCoord which starts from '1'
+     */
+    public static ConCord addShift(final ConCord baseMathCoord) {
+        final ConCord consoleCoord;
+        consoleCoord = baseMathCoord.plus(ConCord.SHIFT);
+        //
+        return consoleCoord;
+    }
+    /**
+     * Transforms console coordinates (starting at '1') to base math scale.
+     * We use math coordinates usually. Console coordinates are used in raw commands.
+     * @param consoleCoord starts from '1'
+     * @return new consoleCoord which starts from '0'
+     */
+    public static ConCord removeShift(final ConCord consoleCoord) {
+        final ConCord baseMathCoord;
+        baseMathCoord = consoleCoord.minus(ConCord.SHIFT);
+        //
+        return baseMathCoord;
     }
     
     
@@ -32,7 +61,7 @@ public class ConCord
      * @return point with the sum of X and Y coordinates
      * @throws IllegalArgumentException when less than one argument
      */
-    public static ConCord getSum(ConCord... coordsToSum)
+    public static ConCord getSum(final ConCord... coordsToSum)
                     throws IllegalArgumentException {
         if ( coordsToSum.length <= 0 ) {
             String excMsg = "Need points to sum up. Number of arguments passed: "
@@ -59,7 +88,7 @@ public class ConCord
      * @return point with minimal X and Y
      * @throws IllegalArgumentException when less than one argument
      */
-    public static ConCord getMin(ConCord... coordsToCheck)
+    public static ConCord getMin(final ConCord... coordsToCheck)
                             throws IllegalArgumentException {
         if ( coordsToCheck.length <= 0 ) {
             String excMsg = "Need points to compare. Number of arguments passed: "
@@ -86,7 +115,7 @@ public class ConCord
      * @return point with maximal X and Y
      * @throws IllegalArgumentException when less than one argument
      */
-    public static ConCord getMax(ConCord... coordsToCheck)
+    public static ConCord getMax(final ConCord... coordsToCheck)
                             throws IllegalArgumentException {
         if ( coordsToCheck.length <= 0 ) {
             String excMsg = "Need points to compare. Number of arguments passed: "
@@ -187,13 +216,30 @@ public class ConCord
      * @return sum of this point and the 'add'
      * @throws NullPointerException in case of adding the null
      */
-    public ConCord plus(ConCord add) throws NullPointerException {
+    public ConCord plus(final ConCord add) throws NullPointerException {
         if ( null == add ) {
             String excMsg = "Cannot add 'null' to the point";
             throw new NullPointerException(excMsg);
         }
         //
         return ConCord.getSum(this, add);
+    }
+    /**
+     * Calculate the difference: "this" - "subtrahend".
+     * @param subtrahend coordinate we will subtract
+     * @return mathematical difference between current point and the 'subtrahend'
+     * @throws NullPointerException in case of adding the null
+     */
+    public ConCord minus(final ConCord subtrahend) throws NullPointerException {
+        if ( null == subtrahend ) {
+            String excMsg = "Cannot subtract 'null' from the point";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        // to subtract means to add the same but negative value:
+        ConCord subtrahendToSum = new ConCord(-1 * subtrahend.getX(), -1 * subtrahend.getY());
+        //
+        return ConCord.getSum(this, subtrahendToSum);
     }
     
     
