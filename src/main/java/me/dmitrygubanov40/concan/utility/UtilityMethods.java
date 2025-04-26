@@ -95,12 +95,9 @@ public class UtilityMethods extends UtilityEscCommands
             throw new RuntimeException(excMsg);
         }
         //
-        ConCord result;
-        result = UtilityMethods.parseConsoleReport(positionAnswer);
-        // need a shift to have math coordinates not position:
-        // ([coordinate] = [console position - 1])
-        result.setX(result.getX() - ConCord.SHIFT_X);
-        result.setY(result.getY() - ConCord.SHIFT_Y);
+        ConCord resultWithShift = UtilityMethods.parseConsoleReport(positionAnswer);
+        // need a shift to have math coordinates, not console position:
+        ConCord result = resultWithShift.removeConsoleShift();
         //
         return result;
     }
@@ -209,13 +206,12 @@ public class UtilityMethods extends UtilityEscCommands
      * @return (width, height) in 'ConCord'
      */
     public static ConCord getTerminalSize() {
-        ConCord consoleMaxCoord = UtilityMethods.getTerminalMaxCoord();
+        ConCord consoleMaxCoordWoShift = UtilityMethods.getTerminalMaxCoord();
         //
-        // need to shift becouse position is calculated in coordinates
-        int width = consoleMaxCoord.getX() + ConCord.SHIFT_X;
-        int height = consoleMaxCoord.getY() + ConCord.SHIFT_Y;
+        // need to shift because position is calculated in coordinates:
+        ConCord consoleMaxCoord = consoleMaxCoordWoShift.addConsoleShift();
         //
-        return new ConCord(width, height);
+        return consoleMaxCoord;
     }
     
     
