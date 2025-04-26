@@ -438,7 +438,7 @@ public class ConDraw
     
     
     // object's brush fields
-    public ConDrawFill currentFill;
+    private ConDrawFill currentFill;
     
     
     public ConDraw() {
@@ -447,6 +447,28 @@ public class ConDraw
     
     
     ////////////
+    
+    /**
+     * What brush will paint the dynamic object?
+     * @return current brush settings object
+     */
+    public ConDrawFill getCurrentFill() {
+        return currentFill;
+    }
+    /**
+     * Dynamic ConDraw object will paint with such brush.
+     * @param setFill brush settings we want to install
+     * @throws NullPointerException when there is no brush
+     */
+    public void setCurrentFill(ConDrawFill setFill) {
+        if ( null == setFill ) {
+            String excMsg = "Where is no brush filling for console painting";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.currentFill = setFill;
+    }
+    
     
     
     /**
