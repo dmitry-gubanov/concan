@@ -164,7 +164,7 @@ public class ConWin
         //
         final ConCord borderLeftTop = new ConCord(left, top);
         final ConCord borderRightBottom = new ConCord(right, bottom);
-        final ConDrawFill borderFill = this.getTerminalFilling();
+        final ConDrawFill borderFill = this.winBorder.getFilling();
         //
         ConDraw.border(this.winBorder.getType(), borderLeftTop, borderRightBottom, borderFill);
     }
