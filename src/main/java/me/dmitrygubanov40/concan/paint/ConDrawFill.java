@@ -69,6 +69,9 @@ public class ConDrawFill
                         final ConCol initBrushColor) {
         this.init(initColor, initBrush, initBrushColor);
     }
+    public ConDrawFill(final ConCol initColor, final ConCol initBrushColor) {
+        this.init(initColor.getTrueColor(), DEFAULT_BRUSH, initBrushColor.getTrueColor());
+    }
     public ConDrawFill(final ConCol initColor) {
         this.init(initColor.getTrueColor(), DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR);
     }
@@ -83,6 +86,9 @@ public class ConDrawFill
                         final String initBrush,
                         final Color initBrushTrueColor) {
         this.init(initTrueColor, initBrush, initBrushTrueColor);
+    }
+    public ConDrawFill(final Color initTrueColor, final Color initBrushTrueColor) {
+        this.init(initTrueColor, DEFAULT_BRUSH, initBrushTrueColor);
     }
     public ConDrawFill(final Color initTrueColor) {
         this.init(initTrueColor, DEFAULT_BRUSH, DEFAULT_BRUSH_COLOR);
