@@ -136,7 +136,7 @@ public class ConWinBorder
     public static class Builder
     {
         
-        private final ConWinBorder container;
+        private ConWinBorder container;
         
         //////////////////
         
@@ -200,7 +200,9 @@ public class ConWinBorder
                 this.container.setBorderType(ConBorderRectType.NONE);
             }
             //
-            return this.container;
+            ConWinBorder result = this.container;
+            this.container = new ConWinBorder();
+            return result;
         }
         
         
