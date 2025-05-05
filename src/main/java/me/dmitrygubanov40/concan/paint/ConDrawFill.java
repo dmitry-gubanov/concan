@@ -140,10 +140,38 @@ public class ConDrawFill
     /**
      * @param brushToCheck
      * @return 'true' if brush is OK, 'false' otherwise
+     * @throws NullPointerException when there is no brush char
      */
     protected boolean checkBrush(final String brushToCheck) {
+        if ( null == brushToCheck ) {
+            String excMsg = "Brush is absent";
+            throw new NullPointerException(excMsg);
+        }
+        //
         boolean result = (brushToCheck.length() == ConDrawFill.BRUSH_LENGTH_ALLOWED);
         return result;
+    }
+    
+    /**
+     * @param colorToCheck
+     * @throws NullPointerException when there is no color
+     */
+    protected void checkColor(final Color colorToCheck) {
+        if ( null == colorToCheck ) {
+            String excMsg = "Color is not set";
+            throw new NullPointerException(excMsg);
+        }
+    }
+    
+    /**
+     * @param concolToCheck
+     * @throws NullPointerException when there is no console color
+     */
+    protected void checkColor(final ConCol concolToCheck) {
+        if ( null == concolToCheck ) {
+            String excMsg = "Console color is not set";
+            throw new NullPointerException(excMsg);
+        }
     }
     
     
@@ -190,19 +218,27 @@ public class ConDrawFill
     /**
      * Other setters block.
      */
-    public void setColor(ConCol color) {
+    public void setColor(final ConCol color) {
+        checkColor(trueColor);
+        //
         this.trueColor = color.getTrueColor();
         this.color = color;
     }
-    public void setColor(Color trueColor) {
+    public void setColor(final Color trueColor) {
+        checkColor(trueColor);
+        //
         this.trueColor = trueColor;
         this.color = ConCol.getAnalog(trueColor);
     }
-    public void setBrushColor(ConCol brushColor) {
+    public void setBrushColor(final ConCol brushColor) {
+        checkColor(trueColor);
+        //
         this.brushTrueColor = brushColor.getTrueColor();
         this.brushColor = brushColor;
     }
-    public void setBrushColor(Color brushTrueColor) {
+    public void setBrushColor(final Color brushTrueColor) {
+        checkColor(trueColor);
+        //
         this.brushTrueColor = brushTrueColor;
         this.brushColor = ConCol.getAnalog(brushTrueColor);
     }
