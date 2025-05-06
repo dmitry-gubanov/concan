@@ -448,7 +448,7 @@ public class ConWin
     private void refreshMarginArea() {
         final int borderExtra = this.canSeeBorder() ? 1 : 0;// once memorize potential shift of bars
         final ConDraw painter = new ConDraw();
-        painter.setCurrentFill( this.getTerminalFilling() );
+        painter.setCurrentFill( this.winBorder.getMarginFilling() );
         //
         // when we should start not at the end of previous area, but in the next "zone"
         final int addForNewArea = 1;
