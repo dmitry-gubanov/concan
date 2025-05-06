@@ -2,6 +2,8 @@ package me.dmitrygubanov40.concan.windows;
 
 
 import me.dmitrygubanov40.concan.paint.ConBorderRectType;
+import me.dmitrygubanov40.concan.paint.ConDrawFill;
+import me.dmitrygubanov40.concan.utility.Term;
 
 
 
@@ -22,6 +24,10 @@ public class ConWinBorder
     private static final int DEFAULT_WIDTH_BOTTOM;
     private static final int DEFAULT_WIDTH_LEFT;
     
+    private static final ConBorderRectType DEFAULT_BORDER_TYPE;
+    private static final ConDrawFill DEFAULT_BORDER_FILLING;
+    private static final ConDrawFill DEFAULT_MARGIN_FILLING;
+    
     static {
         INIT_ILLEGAL_BORDER_WIDTH = -1;
         MIN_BORDER_WIDTH = 0;
@@ -31,6 +37,10 @@ public class ConWinBorder
         DEFAULT_WIDTH_RIGHT = 0;
         DEFAULT_WIDTH_BOTTOM = 0;
         DEFAULT_WIDTH_LEFT = 0;
+        //
+        DEFAULT_BORDER_TYPE = ConBorderRectType.NONE;
+        DEFAULT_BORDER_FILLING = new ConDrawFill(Term.EMPTY_CHAR);
+        DEFAULT_MARGIN_FILLING = new ConDrawFill(Term.EMPTY_CHAR);
     }
     
     
@@ -39,7 +49,14 @@ public class ConWinBorder
     
     // border type to draw (if width of each line is at least one)
     // is used by rectangle
-    private ConBorderRectType winBorderType;
+    private ConBorderRectType type;
+    
+    // brush and filling for our border
+    private ConDrawFill filling;
+    
+    // brush and filling for our margin area
+    // Imporntant! Is the same as 'filling' if was not given specially.
+    private ConDrawFill marginFilling;
     
     // all window border widths
     // Important: border char is always one, but border width can be used
@@ -52,7 +69,9 @@ public class ConWinBorder
     //////////////
     
     private ConWinBorder() {
-        this.winBorderType = null;
+        this.type = null;
+        this.filling = null;
+        this.marginFilling = null;
         //
         this.topWidth       = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
         this.rightWidth     = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
@@ -106,7 +125,39 @@ public class ConWinBorder
             throw new NullPointerException(excMsg);
         }
         //
-        this.winBorderType = setType;
+        this.type = setType;
+    }
+    
+    
+    
+    /**
+     * Check filling settings and apply them.
+     * @param setFilling border filling object (full parameters set)
+     * @throws NullPointerException when filling was not given
+     */
+    private void setBorderFilling(final ConDrawFill setFilling)
+                    throws NullPointerException {
+        if ( null == setFilling ) {
+            String excMsg = "Where is no border filling to implement";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.filling = setFilling;
+    }
+    
+    /**
+     * Check filling settings for margin, and then apply them.
+     * @param setMarginFilling margin filling object (full parameters set)
+     * @throws NullPointerException when margin filling was not given
+     */
+    private void setMarginFilling(final ConDrawFill setMarginFilling)
+                    throws NullPointerException {
+        if ( null == setMarginFilling ) {
+            String excMsg = "Where is no margin filling to implement";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.marginFilling = setMarginFilling;
     }
     
     
@@ -114,7 +165,14 @@ public class ConWinBorder
     // block of getters:
     
     public ConBorderRectType getType() {
-        return this.winBorderType;
+        return this.type;
+    }
+    
+    public ConDrawFill getFilling() {
+        return this.filling;
+    }
+    public ConDrawFill getMarginFilling() {
+        return this.marginFilling;
     }
     
     public int getTopWidth() {
@@ -178,6 +236,28 @@ public class ConWinBorder
         }
         
         /**
+         * Setup colors via builder.
+         * @param setFilling
+         * @return embedded builder for following methods
+         */
+        public Builder fill(final ConDrawFill setFilling) {
+            this.container.setBorderFilling(setFilling);
+            //
+            return this;
+        }
+        
+        /**
+         * Setup colors for margin area via builder.
+         * @param setMarginFilling
+         * @return embedded builder for following methods
+         */
+        public Builder marginFill(final ConDrawFill setMarginFilling) {
+            this.container.setMarginFilling(setMarginFilling);
+            //
+            return this;
+        }
+        
+        /**
          * Check the border state before "building" it.
          * Check adequacy of the new object.
          * @return link to the new created border
@@ -195,9 +275,21 @@ public class ConWinBorder
                 this.container.leftWidth = DEFAULT_WIDTH_LEFT;
             //
             // 2. Was the type applied?
-            if ( null == this.container.winBorderType ) {
+            if ( null == this.container.type ) {
                 // type was not given, so setup empty "none"-type
-                this.container.setBorderType(ConBorderRectType.NONE);
+                this.container.setBorderType(ConWinBorder.DEFAULT_BORDER_TYPE);
+            }
+            //
+            // 3. Was the filling applied?
+            if ( null == this.container.filling ) {
+                // filling from default terminal settings
+                this.container.setBorderFilling(ConWinBorder.DEFAULT_BORDER_FILLING);
+            }
+            //
+            // 4. Was the margin filling applied?
+            if ( null == this.container.marginFilling ) {
+                // margin filling from default terminal settings
+                this.container.setMarginFilling(ConWinBorder.DEFAULT_MARGIN_FILLING);
             }
             //
             ConWinBorder result = this.container;
