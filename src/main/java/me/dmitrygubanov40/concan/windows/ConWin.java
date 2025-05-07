@@ -105,7 +105,7 @@ public class ConWin
     
     /**
      * To get a filling object to fill some console area with the current
-     * terminal filling color.
+     * terminal filling parameters.
      * @return ready object
      */
     private ConDrawFill getTerminalFilling() {
@@ -136,22 +136,6 @@ public class ConWin
     
     
     /**
-     * If we have at least one char of width with every line around the window -
-     * we can draw a border.
-     * @return 'true' when have enough space for drawing a border
-     */
-    private boolean canSeeBorder() {
-        boolean result = false;
-        //
-        if ( this.winBorder.getLeftWidth() > 0 && this.winBorder.getRightWidth() > 0
-                && this.winBorder.getTopWidth() > 0 && this.winBorder.getBottomWidth() > 0 ) {
-            result = true;
-        }
-        //
-        return result;
-    }
-    
-    /**
      * Draw the specific rectangle around output zone of the window.
      */
     private void drawBorder() {
@@ -172,7 +156,7 @@ public class ConWin
      * Redraw border if it is set and possible to draw.
      */
     private void refreshBorder() {
-        if ( this.canSeeBorder() ) this.drawBorder();
+        if ( this.winBorder.canSeeBorder() ) this.drawBorder();
     }
     
     
@@ -279,7 +263,7 @@ public class ConWin
             throw new NullPointerException(excMsg);
         }
         //
-        boolean sizeChanged = true;
+        boolean sizeChanged = true;// for potential future
         boolean styleChanged = true;
         if ( null != this.winBorder ) {
             if ( setBorder.getTopWidth() == this.winBorder.getTopWidth()
@@ -296,11 +280,17 @@ public class ConWin
         }
         //
         if ( (setBorder.getTopWidth() + setBorder.getBottomWidth()) >= this.winHeight ) {
-            String excMsg = "Window borders make no output zone height (Y)";
+            String excMsg = "Window borders make no output zone height (Y). "
+                            + "Top: " + setBorder.getTopWidth()
+                            + ", bottom: " + setBorder.getBottomWidth()
+                            + ", window height: " + this.winHeight;
             throw new IllegalArgumentException(excMsg);
         }
         if ( (setBorder.getRightWidth() + setBorder.getLeftWidth()) >= this.winWidth ) {
-            String excMsg = "Window borders make no output zone width (X)";
+            String excMsg = "Window borders make no output zone width (X). "
+                            + "Right: " + setBorder.getRightWidth()
+                            + ", left: " + setBorder.getLeftWidth()
+                            + ", window width: " + this.winWidth;
             throw new IllegalArgumentException(excMsg);
         }
         //
@@ -446,7 +436,10 @@ public class ConWin
      * Is necessary if wide/high fields could be occasionally printed.
      */
     private void refreshMarginArea() {
-        final int borderExtra = this.canSeeBorder() ? 1 : 0;// once memorize potential shift of bars
+        // once memorize potential shift of bars (in console symbols):
+        final int borderExtra = this.winBorder.canSeeBorder()
+                                    ? ConWinBorder.BORDER_NUMBER_OF_CHARS
+                                    : 0;
         final ConDraw painter = new ConDraw();
         painter.setCurrentFill( this.winBorder.getMarginFilling() );
         //
