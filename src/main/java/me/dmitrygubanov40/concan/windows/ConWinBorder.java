@@ -15,6 +15,9 @@ import me.dmitrygubanov40.concan.utility.Term;
 public class ConWinBorder
 {
     
+    // "Width" in characters of border
+    public static final int BORDER_NUMBER_OF_CHARS;
+    
     private static final int INIT_ILLEGAL_BORDER_WIDTH;
     private static final int MIN_BORDER_WIDTH;
     private static final int MAX_BORDER_WIDTH;
@@ -29,6 +32,8 @@ public class ConWinBorder
     private static final ConDrawFill DEFAULT_MARGIN_FILLING;
     
     static {
+        BORDER_NUMBER_OF_CHARS = 1;
+        //
         INIT_ILLEGAL_BORDER_WIDTH = -1;
         MIN_BORDER_WIDTH = 0;
         MAX_BORDER_WIDTH = 250;
@@ -188,6 +193,23 @@ public class ConWinBorder
         return this.bottomWidth;
     }
     
+    /**
+     * If we have at least one char of width - we can draw a border.
+     * In other cases border can be presented, installed, but is invisible
+     * (cannot be drawn).
+     * @return 'true' when have enough space for drawing a border
+     */
+    public boolean canSeeBorder() {
+        boolean result = false;
+        //
+        if ( this.getLeftWidth() > 0 && this.getRightWidth() > 0
+                && this.getTopWidth() > 0 && this.getBottomWidth() > 0 ) {
+            result = true;
+        }
+        //
+        return result;
+    }
+    
     
     /////////////////////////////
     ///// Builder injection /////
@@ -219,7 +241,7 @@ public class ConWinBorder
                                 final int setTop,
                                 final int setRight,
                                 final int setBottom) {
-            this.container.setBorderWidth(setTop, setRight, setBottom, setLeft);
+            this.container.setBorderWidth(setLeft, setTop, setRight, setBottom);
             //
             return this;
         }
