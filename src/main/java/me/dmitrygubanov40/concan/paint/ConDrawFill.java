@@ -206,7 +206,6 @@ public class ConDrawFill
      * @param brush additional texture to fill
      */
     public void setBrush(String brush) throws IllegalArgumentException {
-        //
         if ( !this.checkBrush(brush) ) {
             String excMsg = "Cannot assign brush: '" + brush + "'";
             throw new IllegalArgumentException(excMsg);
