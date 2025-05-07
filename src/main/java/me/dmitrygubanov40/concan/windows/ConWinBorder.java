@@ -281,7 +281,7 @@ public class ConWinBorder
         
         /**
          * Check the border state before "building" it.
-         * Check adequacy of the new object.
+         * Everything can be created "by default", no extra parameters can be called.
          * @return link to the new created border
          */
         public ConWinBorder build() {
