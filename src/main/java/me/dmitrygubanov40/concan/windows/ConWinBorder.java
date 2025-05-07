@@ -61,10 +61,10 @@ public class ConWinBorder
     // all window border widths
     // Important: border char is always one, but border width can be used
     // to make window output zone less
+    private int leftWidth;
     private int topWidth;
     private int rightWidth;
     private int bottomWidth;
-    private int leftWidth;
     
     //////////////
     
@@ -89,11 +89,11 @@ public class ConWinBorder
      * @param setLeft border width of the left side
      * @throws IllegalArgumentException when width is incorrect
      */
-    private void setBorderWidth(final int setTop, final int setRight,
-                                    final int setBottom, final int setLeft)
+    private void setBorderWidth(final int setLeft, final int setTop,
+                                    final int setRight, final int setBottom)
                     throws IllegalArgumentException {
         //
-        final int[] widths = {setTop, setRight, setBottom, setLeft};
+        final int[] widths = {setLeft, setTop, setRight, setBottom};
         //
         for ( int curBorderWidth : widths ) {
             if ( curBorderWidth < ConWinBorder.MIN_BORDER_WIDTH
@@ -105,10 +105,10 @@ public class ConWinBorder
             }
         }
         //
+        this.leftWidth      = setLeft;
         this.topWidth       = setTop;
         this.rightWidth     = setRight;
         this.bottomWidth    = setBottom;
-        this.leftWidth      = setLeft;
     }
     
     
@@ -175,6 +175,9 @@ public class ConWinBorder
         return this.marginFilling;
     }
     
+    public int getLeftWidth() {
+        return this.leftWidth;
+    }
     public int getTopWidth() {
         return this.topWidth;
     }
@@ -183,9 +186,6 @@ public class ConWinBorder
     }
     public int getBottomWidth() {
         return this.bottomWidth;
-    }
-    public int getLeftWidth() {
-        return this.leftWidth;
     }
     
     
@@ -265,14 +265,14 @@ public class ConWinBorder
         public ConWinBorder build() {
             // 1. Was the width applied?
             // If some area was not given - install 'zero'.
+            if ( ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH == this.container.leftWidth )
+                this.container.leftWidth = DEFAULT_WIDTH_LEFT;
             if ( ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH == this.container.topWidth )
                 this.container.topWidth = DEFAULT_WIDTH_TOP;
             if ( ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH == this.container.rightWidth )
                 this.container.rightWidth = DEFAULT_WIDTH_RIGHT;
             if ( ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH == this.container.bottomWidth )
                 this.container.bottomWidth = DEFAULT_WIDTH_BOTTOM;
-            if ( ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH == this.container.leftWidth )
-                this.container.leftWidth = DEFAULT_WIDTH_LEFT;
             //
             // 2. Was the type applied?
             if ( null == this.container.type ) {
