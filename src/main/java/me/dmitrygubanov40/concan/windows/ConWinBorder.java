@@ -12,11 +12,11 @@ import me.dmitrygubanov40.concan.utility.Term;
  * Just a structure for comfortable usage.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class ConWinBorder
+class ConWinBorder
 {
     
     // "Width" in characters of border
-    public static final int BORDER_NUMBER_OF_CHARS;
+    public static final int VISUAL_NUMBER_OF_CHARS;
     
     private static final int INIT_ILLEGAL_BORDER_WIDTH;
     private static final int MIN_BORDER_WIDTH;
@@ -29,10 +29,10 @@ public class ConWinBorder
     
     private static final ConBorderRectType DEFAULT_BORDER_TYPE;
     private static final ConDrawFill DEFAULT_BORDER_FILLING;
-    private static final ConDrawFill DEFAULT_MARGIN_FILLING;
+    private static final ConDrawFill DEFAULT_PADDING_FILLING;
     
     static {
-        BORDER_NUMBER_OF_CHARS = 1;
+        VISUAL_NUMBER_OF_CHARS = 1;
         //
         INIT_ILLEGAL_BORDER_WIDTH = -1;
         MIN_BORDER_WIDTH = 0;
@@ -44,8 +44,8 @@ public class ConWinBorder
         DEFAULT_WIDTH_LEFT = 0;
         //
         DEFAULT_BORDER_TYPE = ConBorderRectType.NONE;
-        DEFAULT_BORDER_FILLING = new ConDrawFill(Term.EMPTY_CHAR);
-        DEFAULT_MARGIN_FILLING = new ConDrawFill(Term.EMPTY_CHAR);
+        DEFAULT_BORDER_FILLING = new ConDrawFill();
+        DEFAULT_PADDING_FILLING = new ConDrawFill();
     }
     
     
@@ -59,9 +59,9 @@ public class ConWinBorder
     // brush and filling for our border
     private ConDrawFill filling;
     
-    // brush and filling for our margin area
+    // brush and filling for our padding area
     // Imporntant! Is the same as 'filling' if was not given specially.
-    private ConDrawFill marginFilling;
+    private ConDrawFill paddingFilling;
     
     // all window border widths
     // Important: border char is always one, but border width can be used
@@ -76,7 +76,7 @@ public class ConWinBorder
     private ConWinBorder() {
         this.type = null;
         this.filling = null;
-        this.marginFilling = null;
+        this.paddingFilling = null;
         //
         this.topWidth       = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
         this.rightWidth     = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
@@ -151,18 +151,18 @@ public class ConWinBorder
     }
     
     /**
-     * Check filling settings for margin, and then apply them.
-     * @param setMarginFilling margin filling object (full parameters set)
-     * @throws NullPointerException when margin filling was not given
+     * Check filling settings for padding, and then apply them.
+     * @param setPaddingFilling padding filling object (full parameters set)
+     * @throws NullPointerException when padding filling was not given
      */
-    private void setMarginFilling(final ConDrawFill setMarginFilling)
+    private void setPaddingFilling(final ConDrawFill setPaddingFilling)
                     throws NullPointerException {
-        if ( null == setMarginFilling ) {
-            String excMsg = "Where is no margin filling to implement";
+        if ( null == setPaddingFilling ) {
+            String excMsg = "Where is no padding filling to implement";
             throw new NullPointerException(excMsg);
         }
         //
-        this.marginFilling = setMarginFilling;
+        this.paddingFilling = setPaddingFilling;
     }
     
     
@@ -176,8 +176,8 @@ public class ConWinBorder
     public ConDrawFill getFilling() {
         return this.filling;
     }
-    public ConDrawFill getMarginFilling() {
-        return this.marginFilling;
+    public ConDrawFill getPaddingFilling() {
+        return this.paddingFilling;
     }
     
     public int getLeftWidth() {
@@ -230,7 +230,7 @@ public class ConWinBorder
         // sort of setters block
         
         /**
-         * Setup via builder width size (in characters).
+         * Setup via builder width size (in characters) for each side.
          * @param setLeft
          * @param setTop
          * @param setRight
@@ -244,6 +244,14 @@ public class ConWinBorder
             this.container.setBorderWidth(setLeft, setTop, setRight, setBottom);
             //
             return this;
+        }
+        /**
+         * Setup via builder width size (in characters) for all sides at once.
+         * @param setWidth
+         * @return embedded builder for following methods
+         */
+        public Builder width(final int setWidth) {
+            return this.width(setWidth, setWidth, setWidth, setWidth);
         }
         
         /**
@@ -269,12 +277,12 @@ public class ConWinBorder
         }
         
         /**
-         * Setup colors for margin area via builder.
-         * @param setMarginFilling
+         * Setup colors for padding area via builder.
+         * @param setPaddingFilling
          * @return embedded builder for following methods
          */
-        public Builder marginFill(final ConDrawFill setMarginFilling) {
-            this.container.setMarginFilling(setMarginFilling);
+        public Builder paddingFill(final ConDrawFill setPaddingFilling) {
+            this.container.setPaddingFilling(setPaddingFilling);
             //
             return this;
         }
@@ -308,10 +316,10 @@ public class ConWinBorder
                 this.container.setBorderFilling(ConWinBorder.DEFAULT_BORDER_FILLING);
             }
             //
-            // 4. Was the margin filling applied?
-            if ( null == this.container.marginFilling ) {
-                // margin filling from default terminal settings
-                this.container.setMarginFilling(ConWinBorder.DEFAULT_MARGIN_FILLING);
+            // 4. Was the padding filling applied?
+            if ( null == this.container.paddingFilling ) {
+                // padding filling from default terminal settings
+                this.container.setPaddingFilling(ConWinBorder.DEFAULT_PADDING_FILLING);
             }
             //
             ConWinBorder result = this.container;
