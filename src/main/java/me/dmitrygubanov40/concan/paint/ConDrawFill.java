@@ -109,6 +109,22 @@ public class ConDrawFill
         this.init( (Color) null, ConDrawFill.DEFAULT_BRUSH, (Color) null);
     }
     
+    /**
+     * Independent copy constructor.
+     * @param origFill filling parameters we will copy
+     * @throws NullPointerException if there is no 'origFill'
+     */
+    public ConDrawFill(final ConDrawFill origFill) {
+        if ( null == origFill ) {
+            String excMsg = "Where is no original filling parameters to copy";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.init(origFill.getColor(),
+                    origFill.getBrush(),
+                    origFill.getBrushColor());
+    }
+    
     
     
     /**
