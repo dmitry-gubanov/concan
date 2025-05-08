@@ -73,15 +73,39 @@ class ConWinBorder
     
     //////////////
     
+    /**
+     *  Base empty constructor.
+     */
     private ConWinBorder() {
         this.type = null;
         this.filling = null;
         this.paddingFilling = null;
         //
+        this.leftWidth      = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
         this.topWidth       = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
         this.rightWidth     = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
         this.bottomWidth    = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
-        this.leftWidth      = ConWinBorder.INIT_ILLEGAL_BORDER_WIDTH;
+    }
+    
+    /**
+     * Independent copy constructor.
+     * @param origBorder original set of filling parameters we will copy
+     * @throws NullPointerException if there is no 'origBorder'
+     */
+    private ConWinBorder(final ConWinBorder origBorder) {
+        if ( null == origBorder ) {
+            String excMsg = "Where is no original border parameters to copy";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.type = origBorder.getType();
+        this.filling = new ConDrawFill( origBorder.getFilling() );
+        this.paddingFilling = new ConDrawFill( origBorder.getPaddingFilling() );
+        //
+        this.leftWidth      = origBorder.getLeftWidth();
+        this.topWidth       = origBorder.getTopWidth();
+        this.rightWidth     = origBorder.getRightWidth();
+        this.bottomWidth    = origBorder.getBottomWidth();
     }
     
     
@@ -288,6 +312,25 @@ class ConWinBorder
         }
         
         /**
+         * Copier of border for builder.
+         * @param example border all properties of each will be used
+         * @return embedded builder for following methods
+         * @throws NullPointerException if nothing to copy
+         */
+        public Builder copy(final ConWinBorder example) {
+            if ( null == example ) {
+                String excMsg = "There is nothing to copy to border properties";
+                throw new NullPointerException(excMsg);
+            }
+            //
+            this.container = new ConWinBorder(example);
+            //
+            return this;
+        }
+        
+        
+        
+        /**
          * Check the border state before "building" it.
          * Everything can be created "by default", no extra parameters can be called.
          * @return link to the new created border
@@ -310,7 +353,22 @@ class ConWinBorder
                 this.container.setBorderType(ConWinBorder.DEFAULT_BORDER_TYPE);
             }
             //
-            // 3. Was the filling applied?
+            // 3. Was the padding filling applied?
+            if ( null == this.container.paddingFilling ) {
+                // There is no padding filling...
+                if ( null == this.container.filling ) {
+                    // ... and also there is no filling at all!
+                    // So, use default 'terminal' filling.
+                    this.container.setPaddingFilling(ConWinBorder.DEFAULT_PADDING_FILLING);
+                }
+                else {
+                    // When padding filling was not applied, but general filling was.
+                    // In such a case we will use the same filling
+                    // for padding areas too.
+                    this.container.setPaddingFilling(this.container.filling);
+                }
+            }
+            // 4. Was the filling applied?
             if ( null == this.container.filling ) {
                 // filling from default terminal settings
                 this.container.setBorderFilling(ConWinBorder.DEFAULT_BORDER_FILLING);
