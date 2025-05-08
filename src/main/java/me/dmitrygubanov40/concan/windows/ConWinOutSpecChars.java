@@ -201,13 +201,13 @@ class ConWinOutSpecChars
         //
         // 0x07 - beep ('\a'):
         if ( cmdChar.equals(ConUt.BEL) ) {
-            // add standart margin if zone allows
+            // do 'beep' from PC speaker
             this.doBeep();
         }
         //
         // 0x0B - vertical tabulation
         if ( cmdChar.equals(ConUt.VT) ) {
-            // add standart margin if zone allows
+            // pass vertical tabulation
             this.addVerticalTab();
         }
         //
