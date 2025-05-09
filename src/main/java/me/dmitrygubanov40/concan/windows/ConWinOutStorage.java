@@ -1,7 +1,7 @@
 package me.dmitrygubanov40.concan.windows;
 
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 import me.dmitrygubanov40.concan.utility.ConUt;
 
@@ -41,10 +41,13 @@ class ConWinOutStorage
     
     // all characters passed by console output saved in
     // this archive (list)
-    private ArrayList<Character> savedOutput;
+    private LinkedList<Character> savedOutput;
     
     // line-by-line (for the current width) all output strings in the zone
-    private ArrayList<StringBuilder> savedOutputLines;
+    private LinkedList<StringBuilder> savedOutputLines;
+    
+    // line-by-line all current styles at the end of line
+    private LinkedList<ConWinOutBrush> savedLineBrushes;
     
     // 'savedOutput' was saved with this width
     private int savedOutputLinesWidth;
@@ -72,30 +75,59 @@ class ConWinOutStorage
         //
         this.isOff = false;// start ready to work
         //
-        this.savedOutput = new ArrayList<>();
+        this.savedOutput = new LinkedList<>();
         //
-        this.savedOutputLines = new ArrayList<>();
+        this.savedOutputLines = new LinkedList<>();
         this.savedOutputLines.add(new StringBuilder());// init with empty string
+        //
+        this.savedLineBrushes = new LinkedList<>();
         //
         this.savedOutputLinesWidth = initWidth;
         this.savedOutputSizeLimit = initLimit;
     }
     public ConWinOutStorage(final int initWidth) {
-        this(initWidth, DEFAULT_SIZE_LIMIT);
+        this(initWidth, ConWinOutStorage.DEFAULT_SIZE_LIMIT);
     }
+    
+    
+    ////////////////////////
+    
+    
+    /**
+     * Get the brush which was saved for the line with such index.
+     * @param index line index the brush we want
+     * @return actual brush at the end of line with 'index'
+     * @throws IndexOutOfBoundsException for incorrect index
+     */
+    public ConWinOutBrush getBrushOfLineByIndex(final int index) {
+        final int MAX_INDEX = this.savedLineBrushes.size() - 1;
+        if ( index < 0 || index > MAX_INDEX ) {
+            String excMsg = "Incorrect index of line to get console brush:"
+                            + " requested index is '" + index
+                            + "', maximum is '" + MAX_INDEX + "'";
+            throw new IndexOutOfBoundsException(excMsg);
+        }
+        //
+        return this.savedLineBrushes.get(index);
+    }
+    
+    
     
     /**
      * Make the archive (storage) to be an empty dead-end.
      */
     public void turnOff() {
         this.isOff = true;
+        //
         this.savedOutput = null;
         this.savedOutputLines = null;
+        this.savedLineBrushes = null;
     }
     
     /**
      * Builtin 'isOff' filter.
-     * For class-private purposes use 'generateException'
+     * For class-private purposes use 'generateException'.
+     * @param generateException do we generate exceptions?
      * @return 'true' if can work
      * @throws IllegalStateException in case 'isOff' is 'true'
      */
@@ -115,8 +147,8 @@ class ConWinOutStorage
     
     
     /**
-     * Delete some number of characters from the storage.
-     * Automatically rework lines in the storage.
+     * Delete some number of characters from the 'char-by-char' storage.
+     * Automatically rework lines in the storage (remove lines if necessary).
      * @param toCutOff how many symbols must be cut off (both 'savedOutput' and 'savedOutputLines')
      */
     private void reduceStorageData(final int toCutOff) {
@@ -178,7 +210,8 @@ class ConWinOutStorage
     
     /**
      * Transfer regular text to the storage.
-     * Automatically clear (cut off) previous symbols out of storage size limit.
+     * Automatically clear (cut off) previous symbols
+     * out of storage size limit if necessary.
      * @param addedTxt text to save
      * @param addedTxtWidth width of the text we are saving
      * @throws NullPointerException when tries to save null-string  
@@ -257,6 +290,34 @@ class ConWinOutStorage
     
     
     /**
+     * Save (overwrite) brush state for the current line of storage.
+     * Important: lines are save synchronized via index.
+     * @param currentBrush current state of brush we want to save
+     * @throws NullPointerException when brush was not given
+     */
+    public void saveLineBrush(final ConWinOutBrush currentBrush) {
+        if ( this.checkOffStatus() ) return;
+        //
+        if ( null == currentBrush ) {
+            String excMsg = "Brush was not given to be save in storage";
+            throw new NullPointerException(excMsg);
+        }
+        // shallow copy of current brush
+        ConWinOutBrush brushToCopy = new ConWinOutBrush(currentBrush);
+        //
+        final int lastLineIndex = this.savedOutputLines.size() - 1;
+        if ( this.savedLineBrushes.size() < this.savedOutputLines.size() ) {
+            // output brush was not saved for the line yet
+            this.savedLineBrushes.add(brushToCopy);
+        } else {
+            // overwrite
+            this.savedLineBrushes.set(lastLineIndex, brushToCopy);
+        }
+    }
+    
+    
+    
+    /**
      * Insert (start) new line in the lines archive.
      */
     public void storeNewLine() {
@@ -285,6 +346,7 @@ class ConWinOutStorage
         }
         //
         this.savedOutputLines.remove(0);
+        this.savedLineBrushes.remove(0);// !!! It is necessary to add all removed brushes into default set of starting brushes
     }
     
     /**
@@ -300,8 +362,11 @@ class ConWinOutStorage
                 this.deleteFirstLine();
             } catch ( IndexOutOfBoundsException e ) {
                 // the last row is re-inited, and exit
-                this.savedOutputLines = new ArrayList<>();
-                this.savedOutputLines.add(new StringBuilder());// init with empty string
+                this.savedOutputLines = new LinkedList<>();
+                this.savedOutputLines.add(new StringBuilder()); // init with empty string
+                //
+                this.savedLineBrushes = new LinkedList<>();      // no brush data also
+                //
                 break;
             }
         }    
@@ -317,11 +382,11 @@ class ConWinOutStorage
      * @return array of all symbols passed through output
      * @throws RuntimeException if symbols' archive cannot be processed correctly
      */
-    private char[] getSavedOutput(ArrayList<Character> outputLine)
+    private char[] getSavedOutput(LinkedList<Character> outputLine)
                         throws RuntimeException {
         this.checkOffStatus(true);
         //
-        ArrayList<Character> outputToGet = new ArrayList<>(outputLine);
+        LinkedList<Character> outputToGet = new LinkedList<>(outputLine);
         // remove inner 'ConWinOutStorage' func-symbols:
         outputToGet.removeIf(
             (symbol) -> {
@@ -363,11 +428,11 @@ class ConWinOutStorage
     /**
      * @return list of all saved lines as separate Strings
      */
-    public ArrayList<String> getSavedOutputLines() {
+    public LinkedList<String> getSavedOutputLines() {
         // an exception will rise if we want to read data from off-archive
         this.checkOffStatus(true);
         //
-        ArrayList<String> linesResult = new ArrayList<>();
+        LinkedList<String> linesResult = new LinkedList<>();
         //
         for ( StringBuilder curLine : this.savedOutputLines ) {
             // Check new-line characters at endings.
@@ -382,12 +447,12 @@ class ConWinOutStorage
             curLine.getChars(0, curLine.length(), curLineChars, 0);
             //
             // chars array - into list:
-            ArrayList<Character> curLineArrayList = new ArrayList<>();
+            LinkedList<Character> curLineLinkedList = new LinkedList<>();
             for ( char curChar : curLineChars ) {
-                curLineArrayList.add(curChar);
+                curLineLinkedList.add(curChar);
             }
             //
-            linesResult.add(String.valueOf( this.getSavedOutput(curLineArrayList) ));
+            linesResult.add(String.valueOf( this.getSavedOutput(curLineLinkedList) ));
         }
         //
         return linesResult;
