@@ -114,7 +114,7 @@ public class ConWin
     /**
      * To get a filling object to fill some console area with the current
      * terminal filling parameters.
-     * @return ready object
+     * @return ready filling object
      */
     private ConDrawFill getTerminalFilling() {
         final ConDrawFill result = new ConDrawFill(Term.get().background(),
@@ -144,27 +144,12 @@ public class ConWin
     
     
     /**
-     * Draw the specific rectangle around output zone of the window.
-     */
-    private void drawBorder() {
-        // Need a "-1" shift to put the cursor out of printing zone:
-        final int left = this.position.getX() + this.border.getLeftWidth() - 1;
-        final int top = this.position.getY() + this.border.getTopWidth() - 1;
-        // The calculations give correct cursor position w/o shifts:
-        final int right = this.position.getX() + this.width - this.border.getRightWidth();
-        final int bottom = this.position.getY() + this.height - this.border.getBottomWidth();
-        //
-        final ConCord borderLeftTop = new ConCord(left, top);
-        final ConCord borderRightBottom = new ConCord(right, bottom);
-        final ConDrawFill borderFill = this.border.getFilling();
-        //
-        ConDraw.border(this.border.getType(), borderLeftTop, borderRightBottom, borderFill);
-    }
-    /**
      * Redraw border if it is set and possible to draw.
      */
     private void refreshBorder() {
-        if ( this.border.canSeeBorder() ) this.drawBorder();
+        if ( this.border.canSeeBorder() ) {
+            this.border.drawBorder(this.position, this.width, this.height);
+        }
     }
     
     
