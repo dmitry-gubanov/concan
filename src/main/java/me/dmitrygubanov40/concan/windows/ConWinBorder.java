@@ -222,13 +222,15 @@ class ConWinBorder
      * If we have at least one char of width - we can draw a border.
      * In other cases border can be presented, installed, but is invisible
      * (cannot be drawn).
+     * 'NONE' type of border also blocks visual border.
      * @return 'true' when have enough space for drawing a border
      */
     public boolean canSeeBorder() {
         boolean result = false;
         //
         if ( this.getLeftWidth() > 0 && this.getRightWidth() > 0
-                && this.getTopWidth() > 0 && this.getBottomWidth() > 0 ) {
+                && this.getTopWidth() > 0 && this.getBottomWidth() > 0
+                && ConBorderRectType.NONE != this.getType() ) {
             result = true;
         }
         //
@@ -236,14 +238,15 @@ class ConWinBorder
     }
     
     /**
-     * Draw the specific rectangle around output zone of the window.
+     * Draw the specific rectangle around given bar (pos, width, height).
      * @param pos start position (i.e. left top corner)
      * @param width all area (border) width
      * @param height all area (border) height
      * @throws NullPointerException if position was not given
      * @throws IllegalArgumentException if no linear size were given
      */
-    public void drawBorder(final ConCord pos, final int width, final int height) {
+    public void drawBorder(final ConCord pos, final int width, final int height)
+                        throws NullPointerException, IllegalArgumentException {
         if ( null == pos ) {
             String excMsg = "There is no start corner coordinates to draw the border";
             throw new NullPointerException(excMsg);
@@ -266,6 +269,108 @@ class ConWinBorder
         final ConDrawFill borderFill = this.getFilling();
         //
         ConDraw.border(this.getType(), borderLeftTop, borderRightBottom, borderFill);
+    }
+    
+    /**
+     * Fill specific margin/padding areas in out zone (outPos, outWidth, outHeight),
+     * ignoring inner bar (innerPos, innerWidth, innerHeight).
+     * If visual border is set - do not fill the sides of the border.
+     * If there is no real padding - fill nothing.
+     * @param outPos
+     * @param outWidth
+     * @param outHeight
+     * @param innerPos
+     * @param innerWidth
+     * @param innerHeight
+     * @throws NullPointerException when positions for area are empty
+     * @throws IllegalArgumentException in case of incorrect linear sizes
+     */
+    public void fillPadding(final ConCord outPos, final int outWidth, final int outHeight,
+                        final ConCord innerPos, final int innerWidth, final int innerHeight)
+                    throws NullPointerException, IllegalArgumentException {
+        if ( null == outPos || null == innerPos ) {
+            String excMsg = "There is no coordinates to fill the padding area";
+            throw new NullPointerException(excMsg);
+        }
+        if ( outWidth < 0 || outHeight < 0 || innerWidth <= 0 || innerHeight <= 0 ) {
+            String excMsg = "Incorrect size of outter or inner bar for padding filling";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        // once memorize potential shift of bars (in console symbols):
+        final int BORDER_EXTRA = this.canSeeBorder()
+                                    ? ConWinBorder.VISUAL_NUMBER_OF_CHARS
+                                    : 0;
+        final ConDraw painter = new ConDraw();
+        painter.setCurrentFill( this.getPaddingFilling() );
+        //
+        // when we should start not at the end of previous area, but in the next "zone"
+        final int ADD_FOR_NEW_AREA = 1;
+        //
+        // 1. left area:
+        final ConCord leftPoint1 = outPos;
+        //
+        final int l2ToAddX = this.getLeftWidth() - BORDER_EXTRA;
+        final int l2ToAddY = outHeight;
+        ConCord leftPaddingAreaSizeToAdd = new ConCord(l2ToAddX, l2ToAddY).removeConsoleShift();
+        final ConCord leftPoint2 = leftPoint1.plus(leftPaddingAreaSizeToAdd);
+        //
+        if ( leftPoint2.getX() >= leftPoint1.getX() ) {
+            // only if really have some padding area width
+            painter.drawBar(leftPoint1, leftPoint2);
+        }
+        //
+        // 2. right area:
+        final int r1x = innerPos.getX()
+                        + (innerWidth - ConCord.SHIFT_X)
+                        + BORDER_EXTRA
+                        + ADD_FOR_NEW_AREA;// always away from output zone characters
+        final int r1y = outPos.getY();
+        final ConCord rightPoint1 = new ConCord(r1x, r1y);
+        //
+        final ConCord winRightBottomAdd = new ConCord(outWidth, outHeight).removeConsoleShift();
+        // calculate simple right-bottom corner coordinates of window:
+        final ConCord rightPoint2 = outPos.plus(winRightBottomAdd);
+        //
+        if ( rightPoint2.getX() >= rightPoint1.getX() ) {
+            // when have width in right area
+            painter.drawBar(rightPoint1, rightPoint2);
+        }
+        //
+        // 3. top area:
+        final int t1x = (leftPoint2.getX() >= leftPoint1.getX())
+                            ? leftPoint2.getX() + ADD_FOR_NEW_AREA// left area was brushed, no overcovering
+                            : outPos.getX();// no left area, cover first characters colummn
+        final int t1y = outPos.getY();// just window position
+        // this point will start cover strcitly out of left area boundaries
+        final ConCord topPoint1 = new ConCord(t1x, t1y);
+        //
+        final int t2ToAddX = innerWidth + 2 * BORDER_EXTRA;// when have border - should be twice wider
+        final int t2ToAddY = this.getTopWidth() - BORDER_EXTRA;
+        ConCord topPaddingAreaSizeToAdd = new ConCord(t2ToAddX, t2ToAddY).removeConsoleShift();
+        final ConCord topPoint2 = topPoint1.plus(topPaddingAreaSizeToAdd);
+        //
+        
+        if ( topPoint2.getY() >= topPoint1.getY() ) {
+            // when we have some real height for the area
+            painter.drawBar(topPoint1, topPoint2);
+        }
+        //
+        // 4. bottom area:
+        final int b1y = innerPos.getY()
+                         + innerHeight
+                         + ADD_FOR_NEW_AREA
+                         + BORDER_EXTRA
+                         - ConCord.SHIFT_Y;
+        final ConCord bottomPoint1 = new ConCord(topPoint1.getX(), b1y);
+        //
+        // 'X' as in top area, 'Y' as in right area:
+        final ConCord bottomPoint2 = new ConCord(topPoint2.getX(), rightPoint2.getY());
+        //
+        if ( bottomPoint2.getY() >= bottomPoint1.getY() ) {
+            // when we have some real height for the area
+            painter.drawBar(bottomPoint1, bottomPoint2);
+        }
     }
     
     
