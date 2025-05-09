@@ -163,13 +163,32 @@ public class ConWinOutBrush
     
     ///////////////////////////////
     
-    
-    ConWinOutBrush() {
+    /**
+     * Empty default constructor.
+     */
+    public ConWinOutBrush() {
         this.brushColor = new StringBuilder("");
         this.brushBackground = new StringBuilder("");
         this.styles = new ArrayList<>();
     }
     
+    /**
+     * 'Clone' constructor.
+     * @param brushToCopy object to be copied
+     * @throws NullPointerException in case there is nothing to copy
+     */
+    public ConWinOutBrush(ConWinOutBrush brushToCopy) {
+        if ( null == brushToCopy ) {
+            String excMsg = "There is no brush to copy";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.brushBackground = new StringBuilder( brushToCopy.brushBackground );
+        this.brushColor = new StringBuilder( brushToCopy.brushColor );
+        this.styles = new ArrayList<>( brushToCopy.styles );
+    }
+    
+    //////////////////////////
     
     /**
      * Setter of font color.
@@ -204,36 +223,12 @@ public class ConWinOutBrush
     
     
     /**
-     * This color is considered to be the current background ("empty color").
-     * Potentially may differ away from Terminal default background.
-     * Necessary for outer 'filling' methods.
-     * @return color the for current filling of the zone
-     */
-    public Color getFillingColor() {
-        Color resColor;
-        //
-        resColor = Term.get().background();
-        //
-        return resColor;
-    }
-    // ConCol analog
-    public ConCol getFillingColor8B() {
-        Color trueColor = this.getFillingColor();
-        //
-        ConCol resColor = ConCol.getAnalog(trueColor);
-        //
-        return resColor;
-    }
-    
-    
-    
-    /**
      * Collect all the necessary data to re-create style (brush)
      * in the window's zone.
      * Is cleaned before putting the real Esc-commands composition.
      * @return string to output to set actual style
      */
-    private String getBrush() {
+    public String getBrush() {
         // clear cursor settings
         StringBuilder brushRes = new StringBuilder(ConUt.RESET);
         //
@@ -246,7 +241,7 @@ public class ConWinOutBrush
             final String defaultColorCmd = ConUt.COLOR( Term.get().color() );
             brushRes.append(defaultColorCmd);
         }
-        // install the font backgroudn:
+        // install the font background:
         if ( this.brushBackground.length() > 0 ) {
             brushRes.append(this.brushBackground);
         } else {
