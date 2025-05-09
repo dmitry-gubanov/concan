@@ -460,83 +460,13 @@ public class ConWin
     
     
     /**
-     * Make guarantee clear free window zones near border lines (if any).
-     * Is necessary if wide/high fields could be occasionally printed.
+     * Fill the padding area (if any).
+     * 'ConWinBorder' automatically fill only valid visual areas
+     * (including char-steps for possible border symbols).
      */
-    private void refreshPaddingArea() {
-        // once memorize potential shift of bars (in console symbols):
-        final int BORDER_EXTRA = this.border.canSeeBorder()
-                                    ? ConWinBorder.VISUAL_NUMBER_OF_CHARS
-                                    : 0;
-        final ConDraw painter = new ConDraw();
-        painter.setCurrentFill( this.border.getPaddingFilling() );
-        //
-        // when we should start not at the end of previous area, but in the next "zone"
-        final int ADD_FOR_NEW_AREA = 1;
-        //
-        // 1. left area:
-        final ConCord leftPoint1 = this.position;
-        //
-        final int l2ToAddX = this.border.getLeftWidth() - BORDER_EXTRA;
-        final int l2ToAddY = this.height;
-        ConCord leftPaddingAreaSizeToAdd = new ConCord(l2ToAddX, l2ToAddY).removeConsoleShift();
-        final ConCord leftPoint2 = leftPoint1.plus(leftPaddingAreaSizeToAdd);
-        //
-        if ( leftPoint2.getX() >= leftPoint1.getX() ) {
-            // only if really have some padding area width
-            painter.drawBar(leftPoint1, leftPoint2);
-        }
-        //
-        // 2. right area:
-        final int r1x = this.getZonePos().getX()
-                        + (this.getZoneWidth() - ConCord.SHIFT_X)
-                        + BORDER_EXTRA
-                        + ADD_FOR_NEW_AREA;// always away from output zone characters
-        final int r1y = this.position.getY();
-        final ConCord rightPoint1 = new ConCord(r1x, r1y);
-        //
-        final ConCord winRightBottomAdd = new ConCord(this.width, this.height).removeConsoleShift();
-        // calculate simple right-bottom corner coordinates of window:
-        final ConCord rightPoint2 = this.position.plus(winRightBottomAdd);
-        //
-        if ( rightPoint2.getX() >= rightPoint1.getX() ) {
-            // when have width in right area
-            painter.drawBar(rightPoint1, rightPoint2);
-        }
-        //
-        // 3. top area:
-        final int t1x = (leftPoint2.getX() >= leftPoint1.getX())
-                            ? leftPoint2.getX() + ADD_FOR_NEW_AREA// left area was brushed, no overcovering
-                            : this.position.getX();// no left area, cover first characters colummn
-        final int t1y = this.position.getY();// just window position
-        // this point will start cover strcitly out of left area boundaries
-        final ConCord topPoint1 = new ConCord(t1x, t1y);
-        //
-        final int t2ToAddX = this.getZoneWidth() + 2 * BORDER_EXTRA;// when have border - should be twice wider
-        final int t2ToAddY = this.border.getTopWidth() - BORDER_EXTRA;
-        ConCord topPaddingAreaSizeToAdd = new ConCord(t2ToAddX, t2ToAddY).removeConsoleShift();
-        final ConCord topPoint2 = topPoint1.plus(topPaddingAreaSizeToAdd);
-        //
-        if ( topPoint2.getY() >= topPoint1.getY() ) {
-            // when we have some real height for the area
-            painter.drawBar(topPoint1, topPoint2);
-        }
-        //
-        // 4. bottom area:
-        final int b1y = this.getZonePos().getY()
-                         + this.getZoneHeight()
-                         + ADD_FOR_NEW_AREA
-                         + BORDER_EXTRA
-                         - ConCord.SHIFT_Y;
-        final ConCord bottomPoint1 = new ConCord(topPoint1.getX(), b1y);
-        //
-        // 'X' as in top area, 'Y' as in right area:
-        final ConCord bottomPoint2 = new ConCord(topPoint2.getX(), rightPoint2.getY());
-        //
-        if ( bottomPoint2.getY() >= bottomPoint1.getY() ) {
-            // when we have some real height for the area
-            painter.drawBar(bottomPoint1, bottomPoint2);
-        }
+    private void refreshPadding() {
+        this.border.fillPadding(this.position, this.width, this.height,
+                                this.getZonePos(), this.getZoneWidth(), this.getZoneHeight());
     }
     
     
@@ -545,7 +475,7 @@ public class ConWin
      * Public access re-drawer of border lines and the caption.
      */
     public void redrawFrame() {
-        this.refreshPaddingArea();
+        this.refreshPadding();
         this.refreshBorder();
         this.refreshCaption();
     }
