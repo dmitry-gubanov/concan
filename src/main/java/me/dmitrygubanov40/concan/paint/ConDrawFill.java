@@ -220,6 +220,7 @@ public class ConDrawFill
     /**
      * To check and set new brush character.
      * @param brush additional texture to fill
+     * @throws IllegalArgumentException when incorrect brush was given
      */
     public void setBrush(String brush) throws IllegalArgumentException {
         if ( !this.checkBrush(brush) ) {
