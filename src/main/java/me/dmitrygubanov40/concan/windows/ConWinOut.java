@@ -1,7 +1,7 @@
 package me.dmitrygubanov40.concan.windows;
 
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 import me.dmitrygubanov40.concan.paint.ConDraw;
 import me.dmitrygubanov40.concan.paint.ConDrawFill;
@@ -318,6 +318,10 @@ class ConWinOut implements WinBufEventListener
         //final String outStr = event.getEventText();
         //final int outStrLength = event.getEventFlags();
         //
+        // After brush was updated - save the brush to the archive
+        // of the line.
+        this.storage.saveLineBrush(this.zoneBrush);
+        //
         // after the output we return to the style conditions
         // of terminal (it had been saved before output)
         Term.get().restore();
@@ -411,19 +415,16 @@ class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
         //
         // check the cmd which was out - is it a font color or a font background?
+        
+        // !!! 2DO: move all such the saving into ConWinOutBrush itself !!!
+        
         if ( ConWinOutBrush.isColorEscCommand(outStr) ) {
             // update font color
             this.zoneBrush.setBrushColor(outStr);
-            //
-            return;
-            //
         }
         if ( ConWinOutBrush.isBackgroundEscCommand(outStr) ) {
             // update font background
             this.zoneBrush.setBrushBackground(outStr);
-            //
-            return;
-            //
         }
         //
     }
@@ -649,32 +650,33 @@ class ConWinOut implements WinBufEventListener
         // zone cannot scroll - so, ignore:
         if ( !this.isScrollable() ) return;
         //
-        ArrayList<String> prevLines = this.storage.getSavedOutputLines();
+        LinkedList<String> prevLines = this.storage.getSavedOutputLines();
         //
-        // Install new, temp zone for output of storage lines
+        // Install new, temp zone for output of storage lines.
+        // The temporary zone must be one line shoter:
         final int tempZoneHeight = this.zoneHeight - 1;
         ConWinOut tempScrollZone = ConWinOut.startNewZone(this.zoneWidth,
-                                                            // temp zone is one line shoter:
                                                             tempZoneHeight,
                                                             this.zonePosition,
                                                             true,// must clear
                                                             this.isAsyncSafe);
-        tempScrollZone.turnOffStorage();// it must be unscrollable zone without buffer
+        // It must be unscrollable zone without buffer:
+        tempScrollZone.turnOffStorage();
+        tempScrollZone.setScrollable(false);
         //
-        // Count number of blank lines we should to insert into temp zone
-        // to get the last line from storage in the last line of temp zone.
-        final int blankLinesNmb = this.zoneHeight - 2 - (this.zoneCursorScrolledDown % tempZoneHeight );
+        // We use the brush from the last hidden line.
+        // And after output all stored lines one by one which can be seen
+        // in the zone with height 'tempZoneHeight' (such number of lines).
+        final int lastHiddenLineIndex = (prevLines.size() - 1) - tempZoneHeight - 1;
+        final int firstShownLineIndex = lastHiddenLineIndex + 1;
         //
-        for ( int i = 0; i < blankLinesNmb; i++ ) {
-            // Necessary shift of empty lines to synchronized
-            // the last line in 'tempScrollZone' and the zone.
-            tempScrollZone.addToZone(ConUt.LF);
-        }
+        final ConWinOutBrush lastHiddenLineBrush = this.storage.getBrushOfLineByIndex(lastHiddenLineIndex);
+        String lastHiddenLineBrushCmd = lastHiddenLineBrush.getBrush();
         //
-        // put all the lines to transfer the styles correctly
-        // (printing only visible is much faster, but we can lost styles,
-        // saved in previous lines)
-        for ( String curPrevLine : prevLines ) {
+        tempScrollZone.addToZone(lastHiddenLineBrushCmd);// add previous brush
+        for ( int i = firstShownLineIndex; i < prevLines.size(); i++ ) {
+            String curPrevLine = prevLines.get(i);
+            //
             tempScrollZone.addToZone(curPrevLine);
             // if length of 'curPrevLine' less than zone's width it is necessary,
             // but if it fits the width - LF-char won't affect visualization.
@@ -719,9 +721,7 @@ class ConWinOut implements WinBufEventListener
      * Cover all the zone with the the default colors and an empty char.
      */
     private void clearZone() {
-        final ConDrawFill clearFill = new ConDrawFill(this.zoneBrush.getFillingColor(),
-                                                        Term.EMPTY_CHAR,
-                                                        this.zoneBrush.getFillingColor());
+        final ConDrawFill clearFill = new ConDrawFill();
         this.fillZone(clearFill);
     }
     
@@ -770,7 +770,7 @@ class ConWinOut implements WinBufEventListener
     /**
      * @return all strings data (for current zone width)
      */
-    public ArrayList<String> getOutputLines() {
+    public LinkedList<String> getOutputLines() {
         return this.storage.getSavedOutputLines();
     }
     
