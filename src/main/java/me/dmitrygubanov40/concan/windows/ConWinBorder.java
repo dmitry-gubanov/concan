@@ -2,8 +2,9 @@ package me.dmitrygubanov40.concan.windows;
 
 
 import me.dmitrygubanov40.concan.paint.ConBorderRectType;
+import me.dmitrygubanov40.concan.paint.ConDraw;
 import me.dmitrygubanov40.concan.paint.ConDrawFill;
-import me.dmitrygubanov40.concan.utility.Term;
+import me.dmitrygubanov40.concan.utility.ConCord;
 
 
 
@@ -233,6 +234,40 @@ class ConWinBorder
         //
         return result;
     }
+    
+    /**
+     * Draw the specific rectangle around output zone of the window.
+     * @param pos start position (i.e. left top corner)
+     * @param width all area (border) width
+     * @param height all area (border) height
+     * @throws NullPointerException if position was not given
+     * @throws IllegalArgumentException if no linear size were given
+     */
+    public void drawBorder(final ConCord pos, final int width, final int height) {
+        if ( null == pos ) {
+            String excMsg = "There is no start corner coordinates to draw the border";
+            throw new NullPointerException(excMsg);
+        }
+        if ( width <= 0 || height <= 0 ) {
+            String excMsg = "Incorrect size to draw the border";
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
+        final int left = pos.getX() + this.getLeftWidth();
+        final int top = pos.getY() + this.getTopWidth();
+        // The calculations give correct cursor position w/o shifts.
+        // We add scalar width, and after - remove scalar width.
+        final int right = pos.getX() + width - this.getRightWidth();
+        final int bottom = pos.getY() + height - this.getBottomWidth();
+        //
+        // Use 'removeConsoleShift' to scale linear size (widths) into coordinates:
+        final ConCord borderLeftTop = new ConCord(left, top).removeConsoleShift();
+        final ConCord borderRightBottom = new ConCord(right, bottom);
+        final ConDrawFill borderFill = this.getFilling();
+        //
+        ConDraw.border(this.getType(), borderLeftTop, borderRightBottom, borderFill);
+    }
+    
     
     
     /////////////////////////////
