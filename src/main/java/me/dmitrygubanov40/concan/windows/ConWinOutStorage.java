@@ -49,6 +49,11 @@ class ConWinOutStorage
     // line-by-line all current styles at the end of line
     private LinkedList<ConWinOutBrush> savedLineBrushes;
     
+    // filling brush for lines, necessary before output
+    // (maybe, because previous lines were deleted)
+    // I.e. last actual brush for output before print something
+    private ConWinOutBrush archivedBrush;
+    
     // 'savedOutput' was saved with this width
     private int savedOutputLinesWidth;
     
@@ -81,6 +86,7 @@ class ConWinOutStorage
         this.savedOutputLines.add(new StringBuilder());// init with empty string
         //
         this.savedLineBrushes = new LinkedList<>();
+        this.archivedBrush = null;
         //
         this.savedOutputLinesWidth = initWidth;
         this.savedOutputSizeLimit = initLimit;
@@ -91,6 +97,34 @@ class ConWinOutStorage
     
     
     ////////////////////////
+    
+    
+    /**
+     * Getter of characters buffer size limit.
+     * @return installed limit of chars to save
+     */
+    public int getSavedOutputSizeLimit() {
+        return this.savedOutputSizeLimit;
+    }
+    
+    
+    
+    /**
+     * Get the saved brush if the storage fixed the deleted line
+     * with brush must be applied before output.
+     * @return brushed-before-line (empty brush if none)
+     */
+    public ConWinOutBrush getArchivedBrush() {
+        ConWinOutBrush res;
+        if ( null == this.archivedBrush ) {
+            res = new ConWinOutBrush();
+        } else {
+            res = this.archivedBrush;
+        }
+        //
+        return res;
+    }
+    
     
     
     /**
@@ -345,8 +379,13 @@ class ConWinOutStorage
             throw new UnsupportedOperationException(excMsg);
         }
         //
-        this.savedOutputLines.remove(0);
-        this.savedLineBrushes.remove(0);// !!! It is necessary to add all removed brushes into default set of starting brushes
+        this.savedOutputLines.remove(0);// line is removed
+        //
+        // we are saving the brush of first line as "outline" brush
+        // before deleting:
+        this.archivedBrush = this.savedLineBrushes.get(0);
+        // now the brush is deleted:
+        this.savedLineBrushes.remove(0);
     }
     
     /**
