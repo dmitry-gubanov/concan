@@ -532,9 +532,18 @@ class ConWinOut implements WinBufEventListener
      * @return can the zone theoretically be scrollable or not?
      */
     private boolean canBeScrollable() {
-        final boolean correctHeight = (this.zoneHeight > 1);
+        // no storage - no scrolling:
+        if ( null == this.storage ) return false;
         //
-        return correctHeight;
+        // only 2+ lines zone can be scrolled
+        final boolean correctHeight = (this.zoneHeight > 1);
+        // memory for at least (N+1) full lines
+        final int reserveMemory = this.zoneWidth * (this.zoneHeight + 1);
+        final boolean enoughMemory = (this.storage.getSavedOutputSizeLimit() >= reserveMemory);
+        //
+        final boolean res = correctHeight && enoughMemory;
+        //
+        return res;
     }
     
     /**
@@ -643,10 +652,10 @@ class ConWinOut implements WinBufEventListener
      * Perform the scrolling of one line down.
      * Suppose cursor is already out of the zone's height.
      * Previous lines will be put other the zone to make the last line to look correct.
-     * Base idea is to use unscrollable zone to overlay print lines to imitate scrolling.
+     * Base idea is to use non-scrollable zone to overlay print lines to imitate scrolling.
      * @throws IllegalStateException when one line zone is to scroll (use 'moveCursorIntoBorder()')
      */
-    private void scrollDown() {
+    private void scrollDown() throws IllegalStateException {
         // zone cannot scroll - so, ignore:
         if ( !this.isScrollable() ) return;
         //
@@ -655,12 +664,14 @@ class ConWinOut implements WinBufEventListener
         // Install new, temp zone for output of storage lines.
         // The temporary zone must be one line shoter:
         final int tempZoneHeight = this.zoneHeight - 1;
+        final boolean CLEAR_SCROLL_ZONE = true;
         ConWinOut tempScrollZone = ConWinOut.startNewZone(this.zoneWidth,
                                                             tempZoneHeight,
                                                             this.zonePosition,
-                                                            true,// must clear
+                                                            CLEAR_SCROLL_ZONE,
                                                             this.isAsyncSafe);
-        // It must be unscrollable zone without buffer:
+        // It must be unscrollable zone without buffer
+        // (only one output):
         tempScrollZone.turnOffStorage();
         tempScrollZone.setScrollable(false);
         //
@@ -668,12 +679,22 @@ class ConWinOut implements WinBufEventListener
         // And after output all stored lines one by one which can be seen
         // in the zone with height 'tempZoneHeight' (such number of lines).
         final int lastHiddenLineIndex = (prevLines.size() - 1) - tempZoneHeight - 1;
+        //
+        // Important: when 'lastHiddenLineIndex' is less than zero it means
+        // output zone storage does not have enough saved lines.
+        // It is a runtime issue because we cannot "build" smooth scrolling.
+        if ( lastHiddenLineIndex < 0 ) {
+            String excMsg = "Text in window output zone cannot be scrolled:"
+                                + " not enough lines saved in output zone";
+            throw new IllegalStateException(excMsg);
+        }
+        //
         final int firstShownLineIndex = lastHiddenLineIndex + 1;
         //
         final ConWinOutBrush lastHiddenLineBrush = this.storage.getBrushOfLineByIndex(lastHiddenLineIndex);
         String lastHiddenLineBrushCmd = lastHiddenLineBrush.getBrush();
         //
-        tempScrollZone.addToZone(lastHiddenLineBrushCmd);// add previous brush
+        tempScrollZone.addToZone(lastHiddenLineBrushCmd);// add previous brush (before real chars output)
         for ( int i = firstShownLineIndex; i < prevLines.size(); i++ ) {
             String curPrevLine = prevLines.get(i);
             //
