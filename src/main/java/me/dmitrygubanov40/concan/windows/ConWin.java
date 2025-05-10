@@ -171,9 +171,9 @@ public class ConWin
                                             winZonePos,
                                             WINZONE_CLEAR_STATE,
                                             this.isMultithread);
-        this.zone.setScrollable(this.isScrollable);
         final int winZoneBuffSize = this.storagePages * winZoneWidth * winZoneHeight;
         this.zone.startNewStorage(winZoneBuffSize);// memory for each window output zone
+        this.zone.setScrollable(this.isScrollable);
     }
     
     /**
