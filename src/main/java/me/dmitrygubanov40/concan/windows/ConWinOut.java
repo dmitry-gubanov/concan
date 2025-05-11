@@ -287,8 +287,9 @@ class ConWinOut implements WinBufEventListener
         //
         // keep coordinates and style of output before output
         Term.get().save();
-        // restore brush settings - output necessary commands
-        this.zoneBrush.restore();
+        // now restore brush settings - output necessary commands
+        final String brushToRestore = this.zoneBrush.getBrush();
+        System.out.print(brushToRestore);
         //
         final int alreadyPrintedLength = this.zoneCursorPos.getX();
         //
@@ -412,21 +413,11 @@ class ConWinOut implements WinBufEventListener
      */
     private void OnAfterOutputCmd(final WinBufEvent event) {
         final String outStr = event.getEventText();
-        final int outStrLength = event.getEventFlags();
+        //final int outStrLength = event.getEventFlags();
         //
-        // check the cmd which was out - is it a font color or a font background?
-        
-        // !!! 2DO: move all such the saving into ConWinOutBrush itself !!!
-        
-        if ( ConWinOutBrush.isColorEscCommand(outStr) ) {
-            // update font color
-            this.zoneBrush.setBrushColor(outStr);
-        }
-        if ( ConWinOutBrush.isBackgroundEscCommand(outStr) ) {
-            // update font background
-            this.zoneBrush.setBrushBackground(outStr);
-        }
-        //
+        // update current brush (if it is brush command)
+        // maybe it is a font color or a font background, etc.
+        this.zoneBrush.analyseAndUpdateBrush(outStr);
     }
     
     
