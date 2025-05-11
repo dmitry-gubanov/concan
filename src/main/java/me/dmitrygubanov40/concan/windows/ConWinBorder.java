@@ -457,7 +457,7 @@ class ConWinBorder
          * @return embedded builder for following methods
          * @throws NullPointerException if nothing to copy
          */
-        public Builder copy(final ConWinBorder example) {
+        public Builder copy(final ConWinBorder example) throws NullPointerException {
             if ( null == example ) {
                 String excMsg = "There is nothing to copy to border properties";
                 throw new NullPointerException(excMsg);
