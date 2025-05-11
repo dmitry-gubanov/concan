@@ -232,7 +232,6 @@ public class ConWinOutBrush
         // clear cursor settings
         StringBuilder brushRes = new StringBuilder(ConUt.RESET);
         //
-        
         // install the font color:
         if ( this.brushColor.length() > 0 ) {
             brushRes.append(this.brushColor);
@@ -241,6 +240,7 @@ public class ConWinOutBrush
             final String defaultColorCmd = ConUt.COLOR( Term.get().color() );
             brushRes.append(defaultColorCmd);
         }
+        //
         // install the font background:
         if ( this.brushBackground.length() > 0 ) {
             brushRes.append(this.brushBackground);
@@ -250,16 +250,41 @@ public class ConWinOutBrush
             brushRes.append(defaultColorCmd);
         }
         //
+        // install possible style:
+        
+        // !!!
+        
+        //
         return brushRes.toString();
     }
     
+    
+    
     /**
-     * To output current state of the brush.
+     * 
+     * @param cmd the string we will analyze to update brush condition
+     * @throws NullPointerException when command string was not given
      */
-    public void restore() {
-        String brushToRestore = this.getBrush();
+    public void analyseAndUpdateBrush(final String cmd) throws NullPointerException {
+        if ( null == cmd ) {
+                String excMsg = "Command string to analyse the brush was not given";
+                throw new NullPointerException(excMsg);
+        }
         //
-        System.out.print(brushToRestore);
+        if ( ConWinOutBrush.isColorEscCommand(cmd) ) {
+            // update font color
+            this.setBrushColor(cmd);
+        }
+        //
+        if ( ConWinOutBrush.isBackgroundEscCommand(cmd) ) {
+            // update font background
+            this.setBrushBackground(cmd);
+        }
+        //
+        // !!! 2DO: need RESET analyse
+        
+        // !!! 2DO: need styles analyse
+        
     }
     
     
