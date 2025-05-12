@@ -140,6 +140,33 @@ class ConWinOutStorageList<T>
     
     
     /**
+     * Rapidly "remove" the number of elements from the list from the beginning.
+     * @param chunkToDelete how many first elements will be "removed"
+     * @throws ArrayIndexOutOfBoundsException when try to delete more elements than list has
+     */
+    public void removeFirst(final int chunkToDelete) 
+                        throws ArrayIndexOutOfBoundsException {
+        if ( chunkToDelete > this.size() ) {
+            String excMsg = "Cannot delete " + chunkToDelete
+                        + "elements, list has only " + this.size() + " elements";
+            throw new ArrayIndexOutOfBoundsException(excMsg);
+        }
+        //
+        for ( int i = 0; i < chunkToDelete; i++ ) {
+            // element by element is erased (marked as 'null'):
+            final int indexForArrayList = this.getArrayListIndex(i);
+            this.list.set(indexForArrayList, null);
+        }
+        // now shift index controller
+        this.firstElementIndex += chunkToDelete;
+        //
+        // in case of too many removed elements - do extra measures
+        this.checkDeletedElements();
+    }
+    
+    
+    
+    /**
      * Special ArrayList 'add'-cover, index only.
      * Important: can be used only via index.
      * Works in special way with zero-index (first element),
