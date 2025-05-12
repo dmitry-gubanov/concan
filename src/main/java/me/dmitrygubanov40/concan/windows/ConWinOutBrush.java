@@ -83,7 +83,7 @@ public class ConWinOutBrush
      * @throws NullPointerException for null-string
      */
     private static boolean checkCmdStr(final String strToCheck)
-                            throws IllegalArgumentException, NullPointerException {
+                            throws NullPointerException {
         final String escCmdPrefix = ConUt.ESC + ConUt.ESC_CMD_SEPARATOR;
         //
         if ( null == strToCheck ) {
