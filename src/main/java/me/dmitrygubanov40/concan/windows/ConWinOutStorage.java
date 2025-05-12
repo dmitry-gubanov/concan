@@ -2,34 +2,31 @@ package me.dmitrygubanov40.concan.windows;
 
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import me.dmitrygubanov40.concan.buffer.OutputBufferString;
 
 import me.dmitrygubanov40.concan.utility.ConUt;
 
 
 
 /**
- * Buffer (archive) of output characters, passed in the window.
- * Just collect data.
+ * Buffer (archive) of output lines, passed into the window.
+ * Just collect data string data.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
 class ConWinOutStorage
 {
     
-    // how many symbols will be in memory by default
-    private final static int DEFAULT_SIZE_LIMIT;
-    // maximum of such symbols in archive
-    private final static int MAX_SIZE_LIMIT;
-    
-    // start and end of command symbols in archive
-    private final static char CMD_START_FLAG;
-    private final static char CMD_END_FLAG;
+    // how many lines will be in memory by default
+    public final static int DEFAULT_LINES_LIMIT;
+    // maximum of such lines in archive
+    private final static int MAX_LINES_LIMIT;
     
     static {
-        DEFAULT_SIZE_LIMIT = 80 * 25 * 100;
-        MAX_SIZE_LIMIT = 80 * 25 * 1000;
-        //
-        CMD_START_FLAG = ConUt.STX.charAt(0);
-        CMD_END_FLAG = ConUt.ETX.charAt(0);
+        DEFAULT_LINES_LIMIT = 100;
+        MAX_LINES_LIMIT = 10000;
     }
     
     
@@ -39,60 +36,70 @@ class ConWinOutStorage
     // Is the storage operational?
     private boolean isOff;
     
-    // all characters passed by console output saved in
-    // this archive (list)
-    private ConWinOutStorageList<Character> savedOutput;
-    
     // line-by-line (for the current width) all output strings in the zone
-    private ConWinOutStorageList<StringBuilder> savedOutputLines;
+    private ConWinOutStorageList<OutputBufferString> savedLines;
     
     // line-by-line all current styles at the end of line
-    private ConWinOutStorageList<ConWinOutBrush> savedLineBrushes;
+    // (synchronized by index with 'savedLines')
+    private ConWinOutStorageList<ConWinOutBrush> savedBrushes;
     
-    // filling brush for lines, necessary before output
-    // (maybe, because previous lines were deleted)
-    // I.e. last actual brush for output before print something
-    private ConWinOutBrush archivedBrush;
+    // window zone of the storage has such a height
+    // (crucial for scrolling)
+    private int windowHeight;
     
-    // 'savedOutput' was saved with this width
-    private int savedOutputLinesWidth;
+    // window zone of the storage has such a width
+    private int linesWidth;
     
     // hold in memory not more than this number of symbols
-    private int savedOutputSizeLimit;
+    private int linesLimit;
+    
+    // safe mode for multi-threading
+    private final boolean isAsyncSafe;
     
     
     ////////////////////////
     
     
     /**
-     * @param initWidth we start with this width of output
-     * @param initLimit length we keep
+     * @param initAsyncStatus ready or not to work with many threads
+     * @param initWidth we start with such width of output
+     * @param initHeight keep data of current window height
+     * @param initLinesLimit length we keep
      * @throws IllegalArgumentException with incorrect parameters
      */
-    public ConWinOutStorage(final int initWidth, final int initLimit)
+    public ConWinOutStorage(final boolean initAsyncStatus,
+                            final int initWidth, final int initHeight,
+                            final int initLinesLimit)
                         throws IllegalArgumentException {
-        if ( initWidth <= 0 || initLimit <= 0
-                || initLimit > ConWinOutStorage.MAX_SIZE_LIMIT ) {
+        if ( initWidth <= 0 || initLinesLimit < 0
+                || initLinesLimit > ConWinOutStorage.MAX_LINES_LIMIT ) {
             String excMsg = "Cannot initialize window storage:"
-                        + " width: " + initWidth + ", size limit: " + initLimit;
+                        + " width: " + initWidth + ", number of lines in memory: "
+                        + initLinesLimit;
             throw new IllegalArgumentException(excMsg);
         }
         //
+        this.isAsyncSafe = initAsyncStatus;
+        //
         this.isOff = false;// start ready to work
         //
-        this.savedOutput = new ConWinOutStorageList<>();
+        this.savedLines = new ConWinOutStorageList<>();
+        // init list with empty string
+        this.savedLines.add( new OutputBufferString(this.isAsyncSafe) );
         //
-        this.savedOutputLines = new ConWinOutStorageList<>();
-        this.savedOutputLines.add(new StringBuilder());// init with empty string
+        this.savedBrushes = new ConWinOutStorageList<>();
         //
-        this.savedLineBrushes = new ConWinOutStorageList<>();
-        this.archivedBrush = null;
+        this.windowHeight = initHeight;
+        this.linesWidth = initWidth;
+        this.linesLimit = initLinesLimit;
         //
-        this.savedOutputLinesWidth = initWidth;
-        this.savedOutputSizeLimit = initLimit;
+        // storage supposed to be an "empty link"
+        if ( 0 == initLinesLimit ) this.turnOff();
+        //
     }
-    public ConWinOutStorage(final int initWidth) {
-        this(initWidth, ConWinOutStorage.DEFAULT_SIZE_LIMIT);
+    public ConWinOutStorage(final boolean initAsyncStatus,
+                            final int initWidth, final int initHeight) {
+        this(initAsyncStatus, initWidth, initHeight, ConWinOutStorage.DEFAULT_LINES_LIMIT);
     }
     
     
@@ -103,26 +110,8 @@ class ConWinOutStorage
      * Getter of characters buffer size limit.
      * @return installed limit of chars to save
      */
-    public int getSavedOutputSizeLimit() {
-        return this.savedOutputSizeLimit;
-    }
-    
-    
-    
-    /**
-     * Get the saved brush if the storage fixed the deleted line
-     * with brush must be applied before output.
-     * @return brushed-before-line (empty brush if none)
-     */
-    public ConWinOutBrush getArchivedBrush() {
-        ConWinOutBrush res;
-        if ( null == this.archivedBrush ) {
-            res = new ConWinOutBrush();
-        } else {
-            res = this.archivedBrush;
-        }
-        //
-        return res;
+    public int getLinesLimit() {
+        return this.linesLimit;
     }
     
     
@@ -135,7 +124,7 @@ class ConWinOutStorage
      */
     public ConWinOutBrush getBrushOfLineByIndex(final int index) 
                                 throws IndexOutOfBoundsException {
-        final int MAX_INDEX = this.savedLineBrushes.size() - 1;
+        final int MAX_INDEX = this.savedBrushes.size() - 1;
         if ( index < 0 || index > MAX_INDEX ) {
             String excMsg = "Incorrect index of line to get console brush:"
                             + " requested index is '" + index
@@ -143,20 +132,19 @@ class ConWinOutStorage
             throw new IndexOutOfBoundsException(excMsg);
         }
         //
-        return this.savedLineBrushes.get(index);
+        return this.savedBrushes.get(index);
     }
     
     
     
     /**
-     * Make the archive (storage) to be an empty dead-end.
+     * Make the storage to be an empty dead-end.
      */
-    public void turnOff() {
+    public final void turnOff() {
         this.isOff = true;
         //
-        this.savedOutput = null;
-        this.savedOutputLines = null;
-        this.savedLineBrushes = null;
+        this.savedLines = null;
+        this.savedBrushes = null;
     }
     
     /**
@@ -185,67 +173,6 @@ class ConWinOutStorage
     }
     
     
-    /**
-     * Delete some number of characters from the 'char-by-char' storage.
-     * Automatically rework lines in the storage (remove lines if necessary).
-     * @param toCutOff how many symbols must be cut off (both 'savedOutput' and 'savedOutputLines')
-     */
-    private void reduceStorageData(final int toCutOff) {
-        this.checkOffStatus(true);
-        //
-        if ( toCutOff <= 0 ) return;
-        //
-        // erase the number of chars from single-line storage
-        for ( int i = 0; i < toCutOff; i++ ) {
-            char chatToDelete = this.savedOutput.get(0);
-            this.savedOutput.remove(0);
-            if ( chatToDelete == ConWinOutStorage.CMD_START_FLAG ) {
-                // we have started to delete command block (ESC-sequence)
-                // delete all chars until delete all the command block
-                while ( this.savedOutput.get(0) != ConWinOutStorage.CMD_END_FLAG ) {
-                    this.savedOutput.remove(0);
-                    i++;
-                }
-                // finally, remove command block border
-                this.savedOutput.remove(0);
-                i++;
-            }
-        }
-        //
-        // We should also delete the lines:
-        // part of the line, and the line in general when it becomes empty.
-        for ( int i = 0; i < toCutOff; i++ ) {
-            //
-            StringBuilder firstLine;
-            //
-            this.deleteFirstEmptyLines();// now first line is not empty
-            firstLine = this.savedOutputLines.get(0);
-            //
-            char chatToDelete = firstLine.charAt(0);
-            //
-            firstLine.deleteCharAt(0);
-            this.deleteFirstEmptyLines();
-            firstLine = this.savedOutputLines.get(0);
-            //
-            if ( chatToDelete == ConWinOutStorage.CMD_START_FLAG ) {
-                // we have started to delete command block (ESC-sequence)
-                // delete all chars in this line, and further also
-                // until delete all the command block is deleted
-                while ( firstLine.charAt(0) != ConWinOutStorage.CMD_END_FLAG ) {
-                    //
-                    firstLine.deleteCharAt(0);
-                    this.deleteFirstEmptyLines();
-                    firstLine = this.savedOutputLines.get(0);
-                    //
-                    i++;
-                }
-                // deleting the end bracket of command block
-                firstLine.deleteCharAt(0);
-                this.deleteFirstEmptyLines();
-                i++;
-            }
-        }
-    }
     
     /**
      * Transfer regular text to the storage.
@@ -267,63 +194,37 @@ class ConWinOutStorage
         final int addedTxtLength = addedTxt.length();
         if ( addedTxtLength <= 0 ) return;
         //
-        // Calculate possible overflows.
-        final int toCutOff;
-        toCutOff = addedTxtLength + this.savedOutput.size() - this.savedOutputSizeLimit;
-        // Symbols overflow, need to cut off some previous characters.
-        if ( toCutOff > 0 ) {
-            this.reduceStorageData(toCutOff);
-        }
+        String textToAppend = addedTxt;
         //
-        // must save everything passed in 'addedTxt' char-by-char
-        char[] addedChars = addedTxt.toCharArray();
-        for ( int i = 0; i < addedChars.length; i++ ) {
-            this.savedOutput.add(addedChars[ i ]);// all symbols archive
+        // If the last symbol in new line - remove it.:
+        if ( textToAppend.substring(addedTxtLength - 1).equals(ConUt.LF) ) {
+            textToAppend = textToAppend.substring(0, addedTxtLength - 1);
         }
         //
         // Must add new chars to the last line of 'savedOutputLines'.
-        // First of all, check if the width has changed
-        if ( this.savedOutputLinesWidth != addedTxtWidth ) {
+        // First of all, check if the width has changed:
+        if ( this.linesWidth != addedTxtWidth ) {
             String excMsg = "Text area width has been changed."
-                            + " Was initially: " + this.savedOutputLinesWidth
+                            + " Was initially: " + this.linesWidth
                             + ", now is: " + addedTxtWidth;
             throw new RuntimeException(excMsg);
         }
-        final int lastLineIndex = this.savedOutputLines.size() - 1;
-        StringBuilder lastLine = this.savedOutputLines.get(lastLineIndex);
-        lastLine.append(addedTxt);
+        // last line is to append:
+        final int lastLineIndex = this.savedLines.size() - 1;
+        OutputBufferString lastLine = this.savedLines.get(lastLineIndex);
+        lastLine.append(textToAppend);
     }
     
     /**
      * Transfer text of the command (special character or ESC-sequence)
      * to the storage.
      * Does not control text area width, command can be of any width.
+     * May need different methods for text and commands for future purposes.
      * @param addedTxt command to save
-     * @throws NullPointerException when tries to save null-string command
      */
-    public void saveOutputCmd(final String addedTxt)
-                            throws NullPointerException {
-        if ( this.checkOffStatus() ) return;
-        //
-        if ( null == addedTxt ) {
-            String excMsg = "Tried to save null-pointer"
-                                + " command string as console output";
-            throw new NullPointerException(excMsg);
-        }
-        //
-        final String cmdToSave;
-        final int SPECIAL_CHAR_LENGTH = 1;
-        if ( addedTxt.length() > SPECIAL_CHAR_LENGTH ) {
-            // long commands (ESC-sequence)
-            cmdToSave = ConWinOutStorage.CMD_START_FLAG
-                            + addedTxt
-                            + ConWinOutStorage.CMD_END_FLAG;
-        } else {
-            // short command char
-            cmdToSave = addedTxt;
-        }
-        //
-        this.saveOutput(cmdToSave, this.savedOutputLinesWidth);
+    public void saveOutputCmd(final String addedTxt) {
+        // at the moment - simple translation into 'saveOutput' function
+        this.saveOutput(addedTxt, this.linesWidth);
     }
     
     
@@ -344,13 +245,13 @@ class ConWinOutStorage
         // shallow copy of current brush
         ConWinOutBrush brushToCopy = new ConWinOutBrush(currentBrush);
         //
-        final int lastLineIndex = this.savedOutputLines.size() - 1;
-        if ( this.savedLineBrushes.size() < this.savedOutputLines.size() ) {
+        final int lastLineIndex = this.savedLines.size() - 1;
+        if ( this.savedBrushes.size() < this.savedLines.size() ) {
             // output brush was not saved for the line yet
-            this.savedLineBrushes.add(brushToCopy);
+            this.savedBrushes.add(brushToCopy);
         } else {
             // overwrite
-            this.savedLineBrushes.set(lastLineIndex, brushToCopy);
+            this.savedBrushes.set(lastLineIndex, brushToCopy);
         }
     }
     
@@ -362,105 +263,26 @@ class ConWinOutStorage
     public void storeNewLine() {
         if ( this.checkOffStatus() ) return;
         //
-        this.savedOutputLines.add(new StringBuilder());
-    }
-    
-    /**
-     * Delete the first line in the lines archive.
-     * @throws IndexOutOfBoundsException if try to erase the last line
-     * @throws UnsupportedOperationException if try to erase non-empty line
-     */
-    public void deleteFirstLine()
-                    throws IndexOutOfBoundsException, UnsupportedOperationException {
-        if ( this.checkOffStatus() ) return;
+        // new element in the archive of lines
+        this.savedLines.add( new OutputBufferString(this.isAsyncSafe) );
         //
-        if ( this.savedOutputLines.size() <= 1 ) {
-            String excMsg = "Cannot delete the last line in the storage";
-            throw new IndexOutOfBoundsException(excMsg);
+        // If list is larger than limit - clear the list
+        // (except the first hidden line):
+        final boolean hasElementsToDelete = this.savedLines.size() > this.getLinesLimit();
+        if ( hasElementsToDelete ) {
+            final int screenAndLine = this.savedLines.size() - (this.windowHeight + 1);
+            final int halfList = (int) this.savedLines.size() / 2;
+            int elementsToDelete = (halfList < screenAndLine)
+                                        ? halfList
+                                        : screenAndLine;
+            //
+            this.savedLines.removeFirst(elementsToDelete);
+            // also, synchroniously remove brushes in the archive
+            this.savedBrushes.removeFirst(elementsToDelete);
         }
-        StringBuilder firstLine = this.savedOutputLines.get(0);
-        if ( firstLine.length() > 0 ) {
-            String excMsg = "Cannot delete non-empty line in the storage";
-            throw new UnsupportedOperationException(excMsg);
-        }
-        //
-        this.savedOutputLines.remove(0);// line is removed
-        //
-        // we are saving the brush of first line as "outline" brush
-        // before deleting:
-        this.archivedBrush = this.savedLineBrushes.get(0);
-        // now the brush is deleted:
-        this.savedLineBrushes.remove(0);
-    }
-    
-    /**
-     * Delete all empty first lines in the storage.
-     */
-    private void deleteFirstEmptyLines() {
-        this.checkOffStatusWithException();
-        //
-        while ( this.savedOutputLines.get(0).length() <= 0 ) {
-            // if some first storage rows are empty - just delete them
-            try {
-                // would no delete the last row
-                this.deleteFirstLine();
-            } catch ( IndexOutOfBoundsException e ) {
-                // the last row is re-inited, and exit
-                this.savedOutputLines = new ConWinOutStorageList<>();
-                this.savedOutputLines.add(new StringBuilder());// init with empty string
-                //
-                // no brush data also
-                this.savedLineBrushes = new ConWinOutStorageList<>();
-                //
-                break;
-            }
-        }    
     }
     
     
-    
-    /**
-     * Give char-array with all kept in memory output symbols
-     * from 'savedOutput' list.
-     * Direct line of everything passed by output.
-     * @param outputLine what line are we going to process?
-     * @return array of all symbols passed through output
-     * @throws RuntimeException if symbols' archive cannot be processed correctly
-     */
-    private char[] getSavedOutput(ArrayList<Character> outputLine)
-                        throws RuntimeException {
-        this.checkOffStatusWithException();
-        //
-        ArrayList<Character> outputToGet = new ArrayList<>(outputLine);
-        // remove inner 'ConWinOutStorage' func-symbols:
-        outputToGet.removeIf(
-            (symbol) -> {
-                boolean toDelete = symbol.equals(ConWinOutStorage.CMD_START_FLAG)
-                                    || symbol.equals(ConWinOutStorage.CMD_END_FLAG);
-                return toDelete;
-            }
-        );
-        int length = outputToGet.size();// length of archive without special symbols
-        char[] result = new char[ length ];
-        //
-        for ( int i = 0; i < length; i++ ) {
-            char curChar = outputToGet.get(i);
-            result[ i ] = curChar;
-        }
-        return result; 
-    }
-    
-    /**
-     * Only the string-converter for 'getSavedOutput()'.
-     * @return string with all symbols passed through output
-     */
-    public String getSavedOutputStr() {
-        // an exception will rise if we want to read data from off-archive
-        this.checkOffStatusWithException();
-        //
-        
-        return String.valueOf( this.getSavedOutput(this.savedOutput.getArrayList()) );
-    }
     
     /**
      * @return list of all saved lines as separate Strings
@@ -469,30 +291,13 @@ class ConWinOutStorage
         // an exception will rise if we want to read data from off-archive
         this.checkOffStatusWithException();
         //
-        ArrayList<String> linesResult = new ArrayList<>();
+        // stream of all the lines (OutputBufferString) -> (String) to ArrayList:
+        Stream linesConverter = this.savedLines.getArrayList().stream();
+        List<String> savedStrings = (List<String>) linesConverter.map(
+            (outputBufferString) -> outputBufferString.toString()
+        ).collect(Collectors.toList());
         //
-        for ( StringBuilder curLine : this.savedOutputLines.getArrayList() ) {
-            // Check new-line characters at endings.
-            // They must be removed as in 'savedOutputLines' we control new lines ourselves.
-            // Also, any LF-char ('\n') must be the last.
-            while ( curLine.indexOf(ConUt.LF) != -1 ) {
-                final int s = curLine.indexOf(ConUt.LF);
-                curLine.deleteCharAt(s);
-            }
-            // get chars of current line:
-            char[] curLineChars = new char[ curLine.length() ];
-            curLine.getChars(0, curLine.length(), curLineChars, 0);
-            //
-            // chars array - into list:
-            ArrayList<Character> curLineArrayList = new ArrayList<>();
-            for ( char curChar : curLineChars ) {
-                curLineArrayList.add(curChar);
-            }
-            //
-            linesResult.add(String.valueOf( this.getSavedOutput(curLineArrayList) ));
-        }
-        //
-        return linesResult;
+        return new ArrayList<>(savedStrings);
     }
     
     
