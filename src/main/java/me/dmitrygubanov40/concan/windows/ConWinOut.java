@@ -1,7 +1,7 @@
 package me.dmitrygubanov40.concan.windows;
 
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.paint.ConDraw;
 import me.dmitrygubanov40.concan.paint.ConDrawFill;
@@ -650,7 +650,7 @@ class ConWinOut implements WinBufEventListener
         // zone cannot scroll - so, ignore:
         if ( !this.isScrollable() ) return;
         //
-        LinkedList<String> prevLines = this.storage.getSavedOutputLines();
+        ArrayList<String> prevLines = this.storage.getSavedOutputLines();
         //
         // Install new, temp zone for output of storage lines.
         // The temporary zone must be one line shoter:
@@ -682,10 +682,11 @@ class ConWinOut implements WinBufEventListener
         //
         final int firstShownLineIndex = lastHiddenLineIndex + 1;
         //
+        // add previous brush (before real chars output):
         final ConWinOutBrush lastHiddenLineBrush = this.storage.getBrushOfLineByIndex(lastHiddenLineIndex);
         String lastHiddenLineBrushCmd = lastHiddenLineBrush.getBrush();
+        tempScrollZone.addToZone(lastHiddenLineBrushCmd);
         //
-        tempScrollZone.addToZone(lastHiddenLineBrushCmd);// add previous brush (before real chars output)
         for ( int i = firstShownLineIndex; i < prevLines.size(); i++ ) {
             String curPrevLine = prevLines.get(i);
             //
@@ -723,7 +724,8 @@ class ConWinOut implements WinBufEventListener
         final ConCord leftTop = this.zonePosition;
         // carefully re-calculate right-bottom coordinates via non-coordinates
         // (zone width and height are not given in math coordinates)
-        final ConCord rightBottomCoordsToAdd = new ConCord(this.zoneWidth, this.zoneHeight).removeConsoleShift();
+        final ConCord rightBottomCoordsToAdd = new ConCord(this.zoneWidth, this.zoneHeight)
+                                                    .removeConsoleShift();
         final ConCord rightBottom = this.zonePosition.plus(rightBottomCoordsToAdd);
         // 'ConDraw' saves and restore output styles itself
         ConDraw.bar(leftTop, rightBottom, filling);
@@ -782,8 +784,8 @@ class ConWinOut implements WinBufEventListener
     /**
      * @return all strings data (for current zone width)
      */
-    public LinkedList<String> getOutputLines() {
-        return this.storage.getSavedOutputLines();
+    public ArrayList<String> getOutputLines() {
+        return new ArrayList<>(this.storage.getSavedOutputLines());
     }
     
     
