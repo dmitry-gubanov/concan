@@ -1,13 +1,11 @@
 package me.dmitrygubanov40.concan.windows;
 
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConStyles;
 import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.utility.Term;
