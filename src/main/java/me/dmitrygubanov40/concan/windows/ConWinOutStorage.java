@@ -1,7 +1,7 @@
 package me.dmitrygubanov40.concan.windows;
 
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import me.dmitrygubanov40.concan.utility.ConUt;
 
@@ -41,13 +41,13 @@ class ConWinOutStorage
     
     // all characters passed by console output saved in
     // this archive (list)
-    private LinkedList<Character> savedOutput;
+    private ConWinOutStorageList<Character> savedOutput;
     
     // line-by-line (for the current width) all output strings in the zone
-    private LinkedList<StringBuilder> savedOutputLines;
+    private ConWinOutStorageList<StringBuilder> savedOutputLines;
     
     // line-by-line all current styles at the end of line
-    private LinkedList<ConWinOutBrush> savedLineBrushes;
+    private ConWinOutStorageList<ConWinOutBrush> savedLineBrushes;
     
     // filling brush for lines, necessary before output
     // (maybe, because previous lines were deleted)
@@ -80,12 +80,12 @@ class ConWinOutStorage
         //
         this.isOff = false;// start ready to work
         //
-        this.savedOutput = new LinkedList<>();
+        this.savedOutput = new ConWinOutStorageList<>();
         //
-        this.savedOutputLines = new LinkedList<>();
+        this.savedOutputLines = new ConWinOutStorageList<>();
         this.savedOutputLines.add(new StringBuilder());// init with empty string
         //
-        this.savedLineBrushes = new LinkedList<>();
+        this.savedLineBrushes = new ConWinOutStorageList<>();
         this.archivedBrush = null;
         //
         this.savedOutputLinesWidth = initWidth;
@@ -133,7 +133,8 @@ class ConWinOutStorage
      * @return actual brush at the end of line with 'index'
      * @throws IndexOutOfBoundsException for incorrect index
      */
-    public ConWinOutBrush getBrushOfLineByIndex(final int index) {
+    public ConWinOutBrush getBrushOfLineByIndex(final int index) 
+                                throws IndexOutOfBoundsException {
         final int MAX_INDEX = this.savedLineBrushes.size() - 1;
         if ( index < 0 || index > MAX_INDEX ) {
             String excMsg = "Incorrect index of line to get console brush:"
@@ -177,6 +178,10 @@ class ConWinOutStorage
     private boolean checkOffStatus() {
         // by default do not generate an exception
         return this.checkOffStatus(false);
+    }
+    private boolean checkOffStatusWithException() {
+        // generate exception, interupt execution
+        return this.checkOffStatus(true);
     }
     
     
@@ -366,7 +371,7 @@ class ConWinOutStorage
      * @throws UnsupportedOperationException if try to erase non-empty line
      */
     public void deleteFirstLine()
-                    throws IndexOutOfBoundsException {
+                    throws IndexOutOfBoundsException, UnsupportedOperationException {
         if ( this.checkOffStatus() ) return;
         //
         if ( this.savedOutputLines.size() <= 1 ) {
@@ -392,7 +397,7 @@ class ConWinOutStorage
      * Delete all empty first lines in the storage.
      */
     private void deleteFirstEmptyLines() {
-        this.checkOffStatus(true);
+        this.checkOffStatusWithException();
         //
         while ( this.savedOutputLines.get(0).length() <= 0 ) {
             // if some first storage rows are empty - just delete them
@@ -401,10 +406,11 @@ class ConWinOutStorage
                 this.deleteFirstLine();
             } catch ( IndexOutOfBoundsException e ) {
                 // the last row is re-inited, and exit
-                this.savedOutputLines = new LinkedList<>();
-                this.savedOutputLines.add(new StringBuilder()); // init with empty string
+                this.savedOutputLines = new ConWinOutStorageList<>();
+                this.savedOutputLines.add(new StringBuilder());// init with empty string
                 //
-                this.savedLineBrushes = new LinkedList<>();      // no brush data also
+                // no brush data also
+                this.savedLineBrushes = new ConWinOutStorageList<>();
                 //
                 break;
             }
@@ -421,11 +427,11 @@ class ConWinOutStorage
      * @return array of all symbols passed through output
      * @throws RuntimeException if symbols' archive cannot be processed correctly
      */
-    private char[] getSavedOutput(LinkedList<Character> outputLine)
+    private char[] getSavedOutput(ArrayList<Character> outputLine)
                         throws RuntimeException {
-        this.checkOffStatus(true);
+        this.checkOffStatusWithException();
         //
-        LinkedList<Character> outputToGet = new LinkedList<>(outputLine);
+        ArrayList<Character> outputToGet = new ArrayList<>(outputLine);
         // remove inner 'ConWinOutStorage' func-symbols:
         outputToGet.removeIf(
             (symbol) -> {
@@ -439,16 +445,7 @@ class ConWinOutStorage
         //
         for ( int i = 0; i < length; i++ ) {
             char curChar = outputToGet.get(i);
-            if ( curChar == ConWinOutStorage.CMD_START_FLAG
-                    || curChar == ConWinOutStorage.CMD_END_FLAG ) {
-                //
-                String excMsg = "Cannot process saved console output";
-                throw new RuntimeException(excMsg);
-                //
-            } else {
-                // regular symbol to add
-                result[ i ] = curChar;
-            }
+            result[ i ] = curChar;
         }
         return result; 
     }
@@ -459,21 +456,22 @@ class ConWinOutStorage
      */
     public String getSavedOutputStr() {
         // an exception will rise if we want to read data from off-archive
-        this.checkOffStatus(true);
+        this.checkOffStatusWithException();
         //
-        return String.valueOf( this.getSavedOutput(this.savedOutput) );
+        
+        return String.valueOf( this.getSavedOutput(this.savedOutput.getArrayList()) );
     }
     
     /**
      * @return list of all saved lines as separate Strings
      */
-    public LinkedList<String> getSavedOutputLines() {
+    public ArrayList<String> getSavedOutputLines() {
         // an exception will rise if we want to read data from off-archive
-        this.checkOffStatus(true);
+        this.checkOffStatusWithException();
         //
-        LinkedList<String> linesResult = new LinkedList<>();
+        ArrayList<String> linesResult = new ArrayList<>();
         //
-        for ( StringBuilder curLine : this.savedOutputLines ) {
+        for ( StringBuilder curLine : this.savedOutputLines.getArrayList() ) {
             // Check new-line characters at endings.
             // They must be removed as in 'savedOutputLines' we control new lines ourselves.
             // Also, any LF-char ('\n') must be the last.
@@ -486,12 +484,12 @@ class ConWinOutStorage
             curLine.getChars(0, curLine.length(), curLineChars, 0);
             //
             // chars array - into list:
-            LinkedList<Character> curLineLinkedList = new LinkedList<>();
+            ArrayList<Character> curLineArrayList = new ArrayList<>();
             for ( char curChar : curLineChars ) {
-                curLineLinkedList.add(curChar);
+                curLineArrayList.add(curChar);
             }
             //
-            linesResult.add(String.valueOf( this.getSavedOutput(curLineLinkedList) ));
+            linesResult.add(String.valueOf( this.getSavedOutput(curLineArrayList) ));
         }
         //
         return linesResult;
