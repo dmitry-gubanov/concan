@@ -147,14 +147,19 @@ class ConWinOut implements WinBufEventListener
      * Restart storage.
      * All previous data will be erased.
      * Also, links new storage to special symbols processor.
-     * @param initLimit max length of storage, in chars (or default size)
+     * @param initLimit number of lines in storage to be saved
      */
     public void startNewStorage(final int initLimit) {
-        this.storage = new ConWinOutStorage(this.zoneWidth, initLimit);
+        this.storage = new ConWinOutStorage(this.isAsyncSafe,
+                                            this.zoneWidth,
+                                            this.zoneHeight,
+                                            initLimit);
         this.specialCharProcessor.linkStorage(this.storage);
     }
     public void startNewStorage() {
-        this.storage = new ConWinOutStorage(this.zoneWidth);
+        this.storage = new ConWinOutStorage(this.isAsyncSafe,
+                                            this.zoneWidth,
+                                            this.zoneHeight);
         this.specialCharProcessor.linkStorage(this.storage);
     }
     
@@ -165,7 +170,9 @@ class ConWinOut implements WinBufEventListener
      * (because it is impossible to scroll without buffer).
      */
     public void turnOffStorage() {
-        this.storage = new ConWinOutStorage(this.zoneWidth);
+        this.storage = new ConWinOutStorage(this.isAsyncSafe,
+                                            this.zoneWidth,
+                                            this.zoneHeight);
         this.storage.turnOff();
         //
         this.setScrollable(false);// cannot scroll w/o the archive
@@ -319,8 +326,8 @@ class ConWinOut implements WinBufEventListener
         //final String outStr = event.getEventText();
         //final int outStrLength = event.getEventFlags();
         //
-        // After brush was updated - save the brush to the archive
-        // of the line.
+        // Save current brush to the archive of this line (can be updated).
+        // Crucial to do it here as long as 'flush' is used at each output.
         this.storage.saveLineBrush(this.zoneBrush);
         //
         // after the output we return to the style conditions
@@ -528,11 +535,10 @@ class ConWinOut implements WinBufEventListener
         //
         // only 2+ lines zone can be scrolled
         final boolean correctHeight = (this.zoneHeight > 1);
-        // memory for at least (N+1) full lines
-        final int reserveMemory = this.zoneWidth * (this.zoneHeight + 1);
-        final boolean enoughMemory = (this.storage.getSavedOutputSizeLimit() >= reserveMemory);
+        // at least (N+1) full lines in memory
+        final boolean enoughLines = (this.storage.getLinesLimit() >= this.zoneHeight);
         //
-        final boolean res = correctHeight && enoughMemory;
+        final boolean res = correctHeight && enoughLines;
         //
         return res;
     }
@@ -773,13 +779,6 @@ class ConWinOut implements WinBufEventListener
     }
     
     
-    
-    /**
-     * @return all symbols data we have in storage
-     */
-    public String getOutput() {
-        return this.storage.getSavedOutputStr();
-    }
     
     /**
      * @return all strings data (for current zone width)
