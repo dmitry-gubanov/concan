@@ -7,7 +7,7 @@ package me.dmitrygubanov40.concan.buffer;
  * both for fast- OR multithread-safe buffering.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-class OutputBufferString extends BufferString
+public class OutputBufferString extends BufferString
 {
     
     private StringBuilder bufferFast;   // is faster, but not for multithreading
@@ -20,6 +20,9 @@ class OutputBufferString extends BufferString
     
     /////
     
+    /**
+     * @param setSafeAsyncStatus readiness for async duties (which is slower)
+     */
     public OutputBufferString(final boolean setSafeAsyncStatus) {
         //
         super(setSafeAsyncStatus);
