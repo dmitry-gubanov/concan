@@ -72,8 +72,6 @@ public class ConWin
     private boolean isMultithread;
     // should we scroll slowly one-by-one row when output in the last console row?
     private boolean isScrollable;
-    // how many pages will be stored in memory for autoscrolling?
-    private int storagePages;
     
     // 'start' point of window (in coordinates, start at [0, 0])
     private ConCord position;
@@ -95,7 +93,6 @@ public class ConWin
         // can be re-declared in builder:
         this.isMultithread = ConWin.DEFAULT_WINZONE_MULTITHREAD;
         this.isScrollable = ConWin.DEFAULT_WINZONE_SCROLLABLE;
-        this.storagePages = ConWin.DEFAULT_WINZONE_STORAGE_PAGES;
         //
         this.width = ConWin.INIT_ILLEGAL_WINDOW_SIZE;
         this.height = ConWin.INIT_ILLEGAL_WINDOW_SIZE;
@@ -157,8 +154,16 @@ public class ConWin
     /**
      * Calculate output zone parameters (border parameters influence) and init them,
      * draw the necessary border.
+     * @param setStorageLines how many lines we are going to keep in memory
+     * @throws IllegalArgumentException with incorrect size of storage
      */
-    private void initWindow() {
+    private void initWindow(final int setStorageLines) {
+        if ( setStorageLines < 0 ) {
+            String excMsg = "Cannot initialize window with such storage size: "
+                                + setStorageLines;
+            throw new IllegalArgumentException(excMsg);
+        }
+        //
         final int winZoneWidth = this.getZoneWidth();
         final int winZoneHeight = this.getZoneHeight();
         final ConCord winZonePos = this.getZonePos();
@@ -171,8 +176,7 @@ public class ConWin
                                             winZonePos,
                                             WINZONE_CLEAR_STATE,
                                             this.isMultithread);
-        final int winZoneBuffSize = this.storagePages * winZoneWidth * winZoneHeight;
-        this.zone.startNewStorage(winZoneBuffSize);// memory for each window output zone
+        this.zone.startNewStorage(setStorageLines);
         this.zone.setScrollable(this.isScrollable);
     }
     
@@ -314,15 +318,6 @@ public class ConWin
      */
     private void setScrollable(final boolean setScroll) {
         this.isScrollable = setScroll;
-    }
-    
-    /**
-     * Output in window is saved, number of such saved "pages".
-     * "Page" means block of characters in size of width x height
-     * @param setPages number of pages to keep in memory
-     */
-    private void setStoragePages(final int setPages) {
-        this.storagePages = setPages;
     }
     
     
@@ -487,12 +482,24 @@ public class ConWin
     public static class Builder
     {
         
+        // to know whether the user has change anything in storage
+        private static int INIT_ILLEGAL_STORAGE_SIZE;
+        
+        static {
+            INIT_ILLEGAL_STORAGE_SIZE = -1;
+        }
+        
+        //////////
+        
         private ConWin container;
         
         private int presetPaddingLeft;
         private int presetPaddingTop;
         private int presetPaddingRight;
         private int presetPaddingBottom;
+        
+        private int presetLines;
+        private int presetPages;
         
         private ConDrawFill presetPaddingFilling;
         
@@ -506,6 +513,10 @@ public class ConWin
             this.presetPaddingTop = 0;
             this.presetPaddingRight = 0;
             this.presetPaddingBottom = 0;
+            //
+            this.presetLines = Builder.INIT_ILLEGAL_STORAGE_SIZE;
+            this.presetPages = Builder.INIT_ILLEGAL_STORAGE_SIZE;
+            //
             this.presetPaddingFilling = null;
         }
         
@@ -789,13 +800,50 @@ public class ConWin
         }
         
         /**
-         * @param setPages the number of "pages" to be kept in memory
+         * @param setLines the number of lines to be kept in memory
+         * @return embedded builder for following methods
+         */
+        public Builder lines(final int setLines) {
+            this.presetLines = setLines;
+            //
+            return this;
+        }
+        /**
+         * @param setPages the number of pages (window zone X*Y size) to be kept in memory
          * @return embedded builder for following methods
          */
         public Builder pages(final int setPages) {
-            this.container.setStoragePages(setPages);
+            this.presetPages = setPages;
             //
             return this;
+        }
+        /**
+         * Should we keep default buffer size,
+         * or calculate new limit for the storage.
+         * Only 'presetLines' matters as parameter,
+         * 'pages' are given only for comfortable usage.
+         */
+        private void calculateStorageLines() {
+            if ( this.presetLines == Builder.INIT_ILLEGAL_STORAGE_SIZE
+                    && this.presetPages == Builder.INIT_ILLEGAL_STORAGE_SIZE ) {
+                // nothing was preset, use default size
+                this.presetLines = ConWinOutStorage.DEFAULT_LINES_LIMIT;
+                //
+                return;
+                //
+            }
+            //
+            // higher priority at direct lines customization
+            if ( this.presetLines != Builder.INIT_ILLEGAL_STORAGE_SIZE ) {
+                // if 'presetLines' is setup - use it,
+                // no calculations are necessary
+                //
+                return;
+                //
+            }
+            //
+            // at the point we know that only pages were customized
+            this.presetLines = (this.presetPages * this.container.height);
         }
         
         
@@ -834,8 +882,11 @@ public class ConWin
                 this.container.setCaption(ConWin.DEFAULT_WINDOW_CAPTION);
             }
             //
+            // 5. Analise and calculate window storage size
+            this.calculateStorageLines();
+            //
             // Now need to install output area:
-            this.container.initWindow();
+            this.container.initWindow(this.presetLines);
             if ( showAfterCreation ) {
                 this.container.clearPlaceForWindow();
                 this.container.redrawFrame();
