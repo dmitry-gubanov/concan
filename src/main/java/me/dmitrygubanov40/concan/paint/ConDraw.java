@@ -22,11 +22,17 @@ public class ConDraw
     // static brush
     private static ConDrawFill staticFill;
     
+    // terminal save switcher
+    private static boolean useTermSave;
+    
     
     static {
         // initialized with default values in 'ConDrawFill'
         ConDraw.staticFill = new ConDrawFill();
+        // by default we use terminal SAVE/RESTORE
+        useTermSave = true;
     }
+    
     
     ////////////
     
@@ -124,8 +130,8 @@ public class ConDraw
         //
         ConUt conTool = new ConUt();
         //
-        // save cursor:
-        conTool.sendSave();
+        // save cursor
+        if ( ConDraw.useTermSave ) Term.get().save();
         //
         // install filling colors:
         conTool.sendBackground(fill.getColor());
@@ -158,8 +164,8 @@ public class ConDraw
             System.out.print(curBrush);
         }
         //
-        // restore cursor:
-        conTool.sendRestore();
+        // restore cursor
+        if ( ConDraw.useTermSave ) Term.get().restore();
     }
     
     /**
@@ -440,13 +446,54 @@ public class ConDraw
     // object's brush fields
     private ConDrawFill currentFill;
     
+    private boolean useTermRestore;
     
+    
+    ////////////
+    
+    
+    // base empty constructor
     public ConDraw() {
         this.currentFill = new ConDrawFill();
+        this.useTermRestore = true;
+    }
+    
+    /**
+     * Constructor with exact fillings.
+     * @param setFilling pre-done filling parameters
+     * @throws NullPointerException when draw filling is not given
+     */
+    public ConDraw(final ConDrawFill setFilling) {
+        if ( null == setFilling ) {
+            String excMsg = "Brush was not given to be save in storage";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.currentFill = setFilling;
+        //
+        this.useTermRestore = true;
     }
     
     
     ////////////
+    
+    
+    /**
+     * Control of save terminal condition, and restoring it (or not).
+     * Drawing object oriented method.
+     * @param setStatus will we use SAVE/RESTORE during the drawing?
+     * @return the object itself to continue manipulations
+     */
+    public ConDraw setTermSaveStatus(final boolean setStatus) {
+        this.useTermRestore = setStatus;
+        //
+        return this;
+    }
+    public boolean getTermSaveStatus() {
+        return this.useTermRestore;
+    }
+    
+    
     
     /**
      * What brush will paint the dynamic object?
@@ -459,14 +506,17 @@ public class ConDraw
      * Dynamic ConDraw object will paint with such brush.
      * @param setFill brush settings we want to install
      * @throws NullPointerException when there is no brush
+     * @return the object itself to continue manipulations
      */
-    public void setCurrentFill(ConDrawFill setFill) {
+    public ConDraw setCurrentFill(ConDrawFill setFill) {
         if ( null == setFill ) {
             String excMsg = "Where is no brush filling for console painting";
             throw new NullPointerException(excMsg);
         }
         //
         this.currentFill = setFill;
+        //
+        return this;
     }
     
     
@@ -475,14 +525,22 @@ public class ConDraw
      * Through static 'draw'-method paint in console via an object.
      * @param figureToDraw our object to be in console
      * @throws NullPointerException if there is no figure
+     * @return the object itself to continue manipulations
      */
-    public void drawFigure(ConFigure figureToDraw) {
+    public ConDraw drawFigure(ConFigure figureToDraw) {
         if ( null == figureToDraw ) {
             String excMsg = "Where is no figure to draw";
             throw new NullPointerException(excMsg);
         }
         //
-        ConDraw.draw(figureToDraw, this.currentFill);
+        synchronized (this) {
+            final boolean saveStatus = ConDraw.useTermSave;
+            ConDraw.useTermSave = this.useTermRestore;
+            ConDraw.draw(figureToDraw, this.currentFill);
+            ConDraw.useTermSave = saveStatus;
+        }
+        //
+        return this;
     }
     
     
@@ -491,11 +549,12 @@ public class ConDraw
      * Make the object to draw the bar.
      * @param leftTop start coordinate (presume)
      * @param rightBottom end coordinate (presume)
+     * @return the object itself to continue manipulations
      */
-    public void drawBar(final ConCord leftTop,
+    public ConDraw drawBar(final ConCord leftTop,
                             final ConCord rightBottom) {
         ConFigure bar = new ConBar(leftTop, rightBottom);
-        this.drawFigure(bar);
+        return this.drawFigure(bar);
     }
     
     
@@ -504,11 +563,12 @@ public class ConDraw
      * Make the object to draw the rectangle.
      * @param leftTop start coordinate (presume)
      * @param rightBottom end coordinate (presume)
+     * @return the object itself to continue manipulations
      */
-    public void drawRect(final ConCord leftTop,
+    public ConDraw drawRect(final ConCord leftTop,
                             final ConCord rightBottom) {
         ConFigure rect = new ConRect(leftTop, rightBottom);
-        this.drawFigure(rect);
+        return this.drawFigure(rect);
     }
     
     
@@ -518,16 +578,17 @@ public class ConDraw
      * @param borderType requested border type
      * @param leftTop start coordinate (presume)
      * @param rightBottom end coordinate (presume)
+     * @return the object itself to continue manipulations
      */
-    public void drawBorderRect(final ConBorderRectType borderType,
+    public ConDraw drawBorderRect(final ConBorderRectType borderType,
                                     final ConCord leftTop,
                                     final ConCord rightBottom) {
         ConFigure singleBorderRect = new ConBorderRect(leftTop, rightBottom, borderType);
-        this.drawFigure(singleBorderRect);
+        return this.drawFigure(singleBorderRect);
     }
-    public void drawBorderRect(final ConCord leftTop,
+    public ConDraw drawBorderRect(final ConCord leftTop,
                                     final ConCord rightBottom) {
-        this.drawBorderRect(ConBorderRectType.SINGLE, leftTop, rightBottom);
+        return this.drawBorderRect(ConBorderRectType.SINGLE, leftTop, rightBottom);
     }
     
     
@@ -536,10 +597,11 @@ public class ConDraw
      * Make the object to draw the single line text label into the console.
      * @param leftTop label's position
      * @param text label's caption
+     * @return the object itself to continue manipulations
      */
-    public void drawLabel(final ConCord leftTop, final String text) {
+    public ConDraw drawLabel(final ConCord leftTop, final String text) {
         ConFigure label = new ConLabel(leftTop, text);
-        this.drawFigure(label);
+        return this.drawFigure(label);
     }
     
     
