@@ -172,10 +172,14 @@ public class ConWin
         // But if window is non-scrollable - we need this regime for output zone autocleaning.
         final boolean WINZONE_CLEAR_STATE = !this.isScrollable;
         //
+        // For regular, user created windows we always need terminal restoration mode.
+        final boolean WINZONE_TERM_RESTORATION_STATE = true;
+        //
         this.zone = ConWinOut.startNewZone(winZoneWidth, winZoneHeight,
                                             winZonePos,
                                             WINZONE_CLEAR_STATE,
-                                            this.isMultithread);
+                                            this.isMultithread,
+                                            WINZONE_TERM_RESTORATION_STATE);
         this.zone.startNewStorage(setStorageLines);
         this.zone.setScrollable(this.isScrollable);
     }
