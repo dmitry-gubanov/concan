@@ -375,7 +375,7 @@ public class ConWinOutBrush
                 this.setBrushBackground("");
             }
             else if ( ConStyles.NONE != styleToAdd ) {
-                // it is an empty (null) style
+                // it is not an empty (null) style -> add
                 this.addBrushStyle(styleToAdd);
             }
         }
