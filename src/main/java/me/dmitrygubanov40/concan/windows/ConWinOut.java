@@ -65,6 +65,9 @@ class ConWinOut implements WinBufEventListener
     // helper to keep all the styles in the zone
     private ConWinOutBrush zoneBrush;
     
+    // use of SAVE/RESTORE every time we use (auto-) flush
+    private boolean useTermRestore;
+    
     
     ////////////
     
@@ -99,6 +102,8 @@ class ConWinOut implements WinBufEventListener
         this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
         //
         this.zoneBrush = new ConWinOutBrush();
+        //
+        this.useTermRestore = true;
     }
     
     /**
@@ -121,13 +126,16 @@ class ConWinOut implements WinBufEventListener
      * @param setPos first-point coordinate of the zone
      * @param setClearState regime of clearing before output
      * @param isSetSafeAsync is our buffer ready to work in async-regime?
+     * @param setTermSaveStatus use or not SAVE/RESTORE
      * @return pointer toward a new window output zone
      */
     public static ConWinOut startNewZone(final int setWidth, final int setHeight,
                         final ConCord setPos,
                         final boolean setClearState,
-                        final boolean isSetSafeAsync) {
+                        final boolean isSetSafeAsync,
+                        final boolean setTermSaveStatus) {
         ConWinOut newZone = new ConWinOut(setWidth, setHeight, setPos, isSetSafeAsync);
+        newZone.setTermSaveStatus(setTermSaveStatus);
         newZone.startNewStorage();
         newZone.setClearZoneRegime(setClearState);
         if ( newZone.getClearZoneRegime() ) {
@@ -138,9 +146,16 @@ class ConWinOut implements WinBufEventListener
         return newZone;
     }
     // clear mode - on, and async mode - off - creator
-    public static ConWinOut startNewZone(final int setWidth, final int setHeight,
-                        final ConCord setPos) {
-        return ConWinOut.startNewZone(setWidth, setHeight, setPos, true, false);
+    public static ConWinOut startNewZone(final int setWidth,
+                                            final int setHeight,
+                                            final ConCord setPos) {
+        final boolean DEFAULT_CLEAR_STATUS = true;
+        final boolean DEFAULT_ASYNC_STATUS = false;
+        final boolean DEFAULT_TERM_SAVE_STATUS = true;
+        return ConWinOut.startNewZone(setWidth, setHeight,setPos,
+                                        DEFAULT_CLEAR_STATUS,
+                                        DEFAULT_ASYNC_STATUS,
+                                        DEFAULT_TERM_SAVE_STATUS);
     }
     
     /**
@@ -192,6 +207,17 @@ class ConWinOut implements WinBufEventListener
         return this.isZoneToClear;
     }
     
+    /**
+     * Control of save terminal condition, and restoring it (or not).
+     * May be useful for temporary inner zones.
+     * @param setStatus will we use SAVE/RESTORE during output in the zone?
+     */
+    private void setTermSaveStatus(final boolean setStatus) {
+        this.useTermRestore = setStatus;
+    }
+    public boolean getTermSaveStatus() {
+        return this.useTermRestore;
+    }
     
     
     ////////////////////////////
@@ -293,10 +319,9 @@ class ConWinOut implements WinBufEventListener
         final int outStrLength = event.getEventFlags();
         //
         // keep coordinates and style of output before output
-        Term.get().save();
-        // now restore brush settings - output necessary commands
-        final String brushToRestore = this.zoneBrush.getBrush();
-        System.out.print(brushToRestore);
+        if ( this.getTermSaveStatus() ) {
+            Term.get().save();
+        }
         //
         final int alreadyPrintedLength = this.zoneCursorPos.getX();
         //
@@ -332,7 +357,9 @@ class ConWinOut implements WinBufEventListener
         //
         // after the output we return to the style conditions
         // of terminal (it had been saved before output)
-        Term.get().restore();
+        if ( this.getTermSaveStatus() ) {
+            Term.get().restore();
+        }
     }
     
     
@@ -377,6 +404,10 @@ class ConWinOut implements WinBufEventListener
             if ( this.isScrollable() ) this.scrollDown();
             else this.moveCursorIntoBorder();
         }
+        //
+        // now restore brush settings - output necessary commands
+        final String brushToRestore = this.zoneBrush.getBrush();
+        System.out.print(brushToRestore);
     }
     
     /**
@@ -496,11 +527,14 @@ class ConWinOut implements WinBufEventListener
                                 + ", text area height: " + height;
             throw new IllegalArgumentException(excMsg);
         }
+        //
+        final boolean USE_TERM_RESTORE = false;// do not need influence on terminal state savings
         ConWinOut printZone = ConWinOut.startNewZone(width,
                                                         height,
                                                         printZoneCoords,
                                                         clearBeforePrint,
-                                                        this.isAsyncSafe);
+                                                        this.isAsyncSafe,
+                                                        USE_TERM_RESTORE);
         printZone.turnOffStorage();// unscrollable zone without buffer
         printZone.addToZone(str);
         printZone.flush();
@@ -515,13 +549,16 @@ class ConWinOut implements WinBufEventListener
      * (to make it 'clean' before new output).
      */
     private void clearLastLine() {
-        final String noLineForClearing = "";
-        final boolean clearBefore = true;
-        final ConCord areaPos = new ConCord(0, this.zoneHeight - 1);// from the begining of last line
-        final int areaWidth = this.zoneWidth;
-        final int areaHeight = 1;// only one line
+        ConCord lastLineStart = new ConCord(0, this.zoneHeight - ConCord.SHIFT_Y);
+        ConCord lastLineEnd = new ConCord(this.zoneWidth - ConCord.SHIFT_X,
+                                            this.zoneHeight - ConCord.SHIFT_Y);
+        // transfer to all console coords:
+        ConCord lastLineBarStart = this.zonePosition.plus(lastLineStart);
+        ConCord lastLineBarEnd = this.zonePosition.plus(lastLineEnd);
         //
-        this.printInZone(noLineForClearing, clearBefore, areaPos, areaWidth, areaHeight);
+        ConDraw painter = new ConDraw( new ConDrawFill() );
+        painter.setTermSaveStatus(false)
+                .drawBar(lastLineBarStart, lastLineBarEnd);
     }
     
     
@@ -662,11 +699,13 @@ class ConWinOut implements WinBufEventListener
         // The temporary zone must be one line shoter:
         final int tempZoneHeight = this.zoneHeight - 1;
         final boolean CLEAR_SCROLL_ZONE = true;
+        final boolean USE_TERM_RESTORE = false;// don't want to use terminal's SAVE/RESTORE
         ConWinOut tempScrollZone = ConWinOut.startNewZone(this.zoneWidth,
                                                             tempZoneHeight,
                                                             this.zonePosition,
                                                             CLEAR_SCROLL_ZONE,
-                                                            this.isAsyncSafe);
+                                                            this.isAsyncSafe,
+                                                            USE_TERM_RESTORE);
         // It must be unscrollable zone without buffer
         // (only one output):
         tempScrollZone.turnOffStorage();
@@ -734,7 +773,9 @@ class ConWinOut implements WinBufEventListener
                                                     .removeConsoleShift();
         final ConCord rightBottom = this.zonePosition.plus(rightBottomCoordsToAdd);
         // 'ConDraw' saves and restore output styles itself
-        ConDraw.bar(leftTop, rightBottom, filling);
+        ConDraw painter = new ConDraw(filling);
+        painter.setTermSaveStatus(false)
+                .drawBar(leftTop, rightBottom);
     }
     
     /**
