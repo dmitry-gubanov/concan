@@ -196,7 +196,7 @@ class ConWinOutStorage
         //
         String textToAppend = addedTxt;
         //
-        // If the last symbol in new line - remove it.:
+        // If the last symbol in new line - remove it:
         if ( textToAppend.substring(addedTxtLength - 1).equals(ConUt.LF) ) {
             textToAppend = textToAppend.substring(0, addedTxtLength - 1);
         }
