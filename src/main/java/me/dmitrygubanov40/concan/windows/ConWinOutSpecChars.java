@@ -90,14 +90,14 @@ class ConWinOutSpecChars
      */
     private void setNewLine(final int xToSet)
                         throws NullPointerException {
-        this.curCursor.setX(xToSet);
-        this.curCursor.setY(this.curCursor.getY() + 1);
-        //
         if ( null == this.curStorage ) {
             // strings archive is necessary but is absent
             String excMsg = "Lines archive (storage) is null (not linked)";
             throw new NullPointerException(excMsg);
         }
+        //
+        this.curCursor.setX(xToSet);
+        this.curCursor.setY(this.curCursor.getY() + 1);
         //
         this.curStorage.storeNewLine();// add new line in zone's data
     }
