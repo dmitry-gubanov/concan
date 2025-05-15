@@ -57,6 +57,9 @@ public class Term
     private ConCol defaultColor8b;
     private ConCol defaultBackground8b;
     
+    // terminal saved state (do we already called SAVE?)
+    private boolean isSaved;
+    
     
     /**
      * Single element constructor.
@@ -64,6 +67,7 @@ public class Term
     private Term() {
         this.maxCoords = ConUt.getTerminalMaxCoord();
         this.maxSize = ConUt.getTerminalSize();
+        this.isSaved = false;
         //
         this.resetColors();
     }
@@ -197,13 +201,25 @@ public class Term
      * Terminal-based saving of all styles and conditions.
      */
     public void save() {
+        if ( this.isSaved ) {
+            // want to save terminal, but it is already saved
+            return;
+        }
+        //
         System.out.print(ConUt.SAVE);
+        this.isSaved = true;
     }
     /**
      * Terminal-based restoration of all styles and conditions.
      */
     public void restore() {
+        if ( !this.isSaved ) {
+            // want to restore terminal, but it was not saved yet
+            return;
+        }
+        //
         System.out.print(ConUt.RESTORE);
+        this.isSaved = false;
     }
     
     
