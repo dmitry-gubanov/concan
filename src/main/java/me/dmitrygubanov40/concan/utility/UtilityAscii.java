@@ -15,6 +15,7 @@ class UtilityAscii extends UtilityEngine
     public static final String CR;
     public static final String BS;
     public static final String LF;
+    public static final String BLF;// backspace + new line
     public static final String HT;
     public static final String VT;
     public static final String ESC;
@@ -28,6 +29,7 @@ class UtilityAscii extends UtilityEngine
         CR  = UtilityEngine.getStrCharByName("CR");
         BS  = UtilityEngine.getStrCharByName("BS");
         LF  = UtilityEngine.getStrCharByName("LF");
+        BLF = LF + " " + BS;
         HT  = UtilityEngine.getStrCharByName("HT");
         VT  = UtilityEngine.getStrCharByName("VT");
         ESC = UtilityEngine.getStrCharByName("ESC");
