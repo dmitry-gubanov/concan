@@ -44,13 +44,6 @@ class UtilityEngine
     ////////////////////
     
     
-    // whether to use rapid output of all buffer or output each symbol or command
-    protected OutputBuffer buffer;
-    
-    
-    ////////////////////
-    
-    
     /**
      * To fill the ASCII-codes table.
      */
@@ -346,6 +339,11 @@ class UtilityEngine
     
     ///////////////////////////////////
     
+    
+    // whether to use rapid output of all buffer or output each symbol or command
+    protected OutputBuffer buffer;
+    
+    ////////////////////
     
     /**
      * @return do we currently use the buffer?
