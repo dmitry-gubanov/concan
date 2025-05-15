@@ -7,7 +7,10 @@ package me.dmitrygubanov40.concan.utility;
  */
 public enum ConStyles
 {
-    
+    NONE ("", "NONE", ""),// no pair, when there is no style
+    //
+    RESET (ConUt.RESET, "RESET", ""),// no pair, when should clear all the styles
+    //
     CURSOR_BLINKING_ON  (ConUt.CURSOR_BLINKING_ON,  "CURSOR_BLINKING_ON",   "CURSOR_BLINKING_OFF"),
     CURSOR_BLINKING_OFF (ConUt.CURSOR_BLINKING_OFF, "CURSOR_BLINKING_OFF",  "CURSOR_BLINKING_ON"),
     //
@@ -30,6 +33,30 @@ public enum ConStyles
     HIDDEN_OFF      (ConUt.HIDDEN_OFF,      "HIDDEN_OFF",       "HIDDEN"),
     STRIKE          (ConUt.STRIKE,          "STRIKE",           "STRIKE_OFF"),
     STRIKE_OFF      (ConUt.STRIKE_OFF,      "STRIKE_OFF",       "STRIKE");
+    
+    
+    /**
+     * Check command text and pick up the same style.
+     * @param cmd escape sequence we check
+     * @return 'NONE'-style for irrelevant command, or specific style from command
+     * @throws NullPointerException for non-command
+     */
+    public static ConStyles getByCmd(final String cmd) {
+        if ( null == cmd ) {
+            String excMsg = "Escape sequence was not given to pick up console style";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        final ConStyles[] allStyles = ConStyles.values();
+        for ( ConStyles curStyle : allStyles ) {
+            if ( curStyle.getStyleCmd().equals(cmd) ) {
+                // it is the same command
+                return curStyle;
+            }
+        }
+        //
+        return ConStyles.NONE;
+    }
     
     ////////////////////////////
     
@@ -73,6 +100,11 @@ public enum ConStyles
      */
     public ConStyles getOppositeStyleOrNull() {
         final String oppStyleName = this.styleOppositeName;
+        if ( oppStyleName.isEmpty() ) {
+            // there is no opposition for this style
+            return null;
+        }
+        //
         final int ord = this.ordinal();
         final ConStyles[] allEnums = ConStyles.values();
         final int minOrd = 0;
