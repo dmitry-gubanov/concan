@@ -539,7 +539,7 @@ public class WindowOutputBuffer
      * Make some string with special chars and commands to be a list of separate strings
      * with regular text and commands each.
      * "txt1\ntxt2\ntxt3\e[5mtxt4" => { "txt1", "\n", "txt2", "\n", "txt3", "\e[5m", "txt4" }
-     * Important! Is not secure, '' must be checked before that doesn't have invalid commands.
+     * Important! Is not secure, must be checked before that doesn't have invalid commands.
      * @param strToParse string with a command
      * @return list of strings, each has a command or a block of regular text
      */
