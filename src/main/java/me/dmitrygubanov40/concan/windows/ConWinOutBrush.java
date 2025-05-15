@@ -27,6 +27,8 @@ public class ConWinOutBrush
     private static final List<String> colorCmds;
     // regular expressions for all we consider Esc-sequence background commands
     private static final List<String> backgroundCmds;
+    // regular expression for all styles commands
+    private static final List<String> styleCmds;
     
     
     static {
@@ -35,6 +37,9 @@ public class ConWinOutBrush
         //
         backgroundCmds = new ArrayList<>();
         initBackgroundCommandsRegex();
+        //
+        styleCmds = new ArrayList<>();
+        initStyleCommandsRegex();
     }
     
     /**
@@ -66,7 +71,7 @@ public class ConWinOutBrush
         String[] fontColorCommands = {
             "48;2;\\d+;\\d+;\\d+m",     // TrueColor
             "48;5;\\d+m",               // 8B-color
-            "((4[0-9])?|(10[0-7])?)m"   // 4B-color + default color ('39m')
+            "((4[0-9])?|(10[0-7])?)m"   // 4B-color + default bg-color ('49m')
         };
         //
         for ( String curExpression : fontColorCommands ) {
@@ -76,6 +81,28 @@ public class ConWinOutBrush
             ConWinOutBrush.backgroundCmds.add(regexToAdd);
         }
     }
+    
+    /**
+     * Write down all regex expressions to cover all escape sequences
+     * we consider to be styles: bold, dim, etc.
+     * Only these Esc-commands will be saved as style commands.
+     */
+    private static void initStyleCommandsRegex() {
+        String[] styleCommands = {
+            "([0-5]|[7-9])m",   // on-styles + RESET
+            "(2[2-5]|2[7-9])m", // off-styles
+            "\\?[1-2](2|5)(h|l)"  // cursor controller
+        };
+        //
+        for ( String curExpression : styleCommands ) {
+            // all lines must start as 'ESC' + '[':
+            String regexToAdd = "\033\\["
+                                + curExpression;
+            ConWinOutBrush.styleCmds.add(regexToAdd);
+        }
+    }
+    
+    
     
     /**
      * Guarantee the string is a Esc-command.
@@ -143,20 +170,42 @@ public class ConWinOutBrush
         return false;
     }
     
+    /**
+     * Check if the whole string is a style Esc-command, or not.
+     * @param strToCheck line we must analyze
+     * @return 'true' when it is a style, or 'false'
+     */
+    public static boolean isStyleEscCommand(final String strToCheck) {
+        if ( !ConWinOutBrush.checkCmdStr(strToCheck) ) return false;
+        //
+        Pattern pattern;
+        Matcher matcher;
+        //
+        for ( String curValidCmd : ConWinOutBrush.styleCmds ) {
+            pattern = Pattern.compile(curValidCmd);
+            matcher = pattern.matcher(strToCheck);
+            //
+            if ( matcher.matches() ) return true;// +
+        }
+        //
+        // here the match did not occur:
+        return false;
+    }
+    
     
     ////////////////////////////////
     
     
     // special style for font color
     // (without it uses default from Terminal)
-    private StringBuilder brushColor;
+    private StringBuffer brushColor;
     
     // special style for background color
     // (without it uses default from Terminal)
-    private StringBuilder brushBackground;
+    private StringBuffer brushBackground;
     
     // applied styles (with mutual block of opposite styles)
-    private ArrayList<ConStyles> styles;
+    private ArrayList<ConStyles> brushStyles;
     
     
     ///////////////////////////////
@@ -165,9 +214,9 @@ public class ConWinOutBrush
      * Empty default constructor.
      */
     public ConWinOutBrush() {
-        this.brushColor = new StringBuilder("");
-        this.brushBackground = new StringBuilder("");
-        this.styles = new ArrayList<>();
+        this.brushColor = new StringBuffer("");
+        this.brushBackground = new StringBuffer("");
+        this.brushStyles = new ArrayList<>();
     }
     
     /**
@@ -181,9 +230,9 @@ public class ConWinOutBrush
             throw new NullPointerException(excMsg);
         }
         //
-        this.brushBackground = new StringBuilder( brushToCopy.brushBackground );
-        this.brushColor = new StringBuilder( brushToCopy.brushColor );
-        this.styles = new ArrayList<>( brushToCopy.styles );
+        this.brushBackground = new StringBuffer( brushToCopy.brushBackground );
+        this.brushColor = new StringBuffer( brushToCopy.brushColor );
+        this.brushStyles = new ArrayList<>( brushToCopy.brushStyles );
     }
     
     //////////////////////////
@@ -200,7 +249,7 @@ public class ConWinOutBrush
             throw new NullPointerException(excMsg);
         }
         //
-        this.brushColor = new StringBuilder(setColor);
+        this.brushColor = new StringBuffer(setColor);
     }
     
     /**
@@ -215,7 +264,40 @@ public class ConWinOutBrush
             throw new NullPointerException(excMsg);
         }
         //
-        this.brushBackground = new StringBuilder(setBackground);
+        this.brushBackground = new StringBuffer(setBackground);
+    }
+    
+    
+    
+    /**
+     * Will add new console style if style is not applied already.
+     * Skips the same (already applied) style.
+     * Opposite style removes the first one ('bold_off' just removes 'bold',
+     * and 'bold' removes 'bold_off').
+     * @param styleToAdd standard console style to add in the filling
+     * @throws NullPointerException if new style does not exist
+     */
+    public void addBrushStyle(ConStyles styleToAdd)
+                    throws NullPointerException {
+        if ( null == styleToAdd ) {
+            String excMsg = "Cannot add new style to the list";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        if ( this.brushStyles.contains(styleToAdd) ) {
+            // prevent adding of the same style many times
+            return;
+        }
+        //
+        // if have opposite style - remove it before adding the new one
+        ConStyles oppStyle = styleToAdd.getOppositeStyleOrNull();
+        if ( null != oppStyle
+                        && this.brushStyles.contains(oppStyle) ) {
+            // already have the opposite style
+            this.brushStyles.remove(oppStyle);
+        }
+        //
+        this.brushStyles.add(styleToAdd);
     }
     
     
@@ -249,9 +331,11 @@ public class ConWinOutBrush
         }
         //
         // install possible style:
-        
-        // !!!
-        
+        if ( !this.brushStyles.isEmpty() ) {
+            for ( ConStyles curStyle : this.brushStyles ) {
+                brushRes.append( curStyle.getStyleCmd() );
+            }
+        }
         //
         return brushRes.toString();
     }
@@ -259,7 +343,7 @@ public class ConWinOutBrush
     
     
     /**
-     * 
+     * Check command string and write down a style (if any).
      * @param cmd the string we will analyze to update brush condition
      * @throws NullPointerException when command string was not given
      */
@@ -270,19 +354,31 @@ public class ConWinOutBrush
         }
         //
         if ( ConWinOutBrush.isColorEscCommand(cmd) ) {
-            // update font color
-            this.setBrushColor(cmd);
+            // remove data of specific color:
+            if ( cmd.equals(ConUt.COLOR_DEFAULT) ) this.setBrushColor("");
+            // update font color:
+            else this.setBrushColor(cmd);
         }
         //
         if ( ConWinOutBrush.isBackgroundEscCommand(cmd) ) {
             // update font background
-            this.setBrushBackground(cmd);
+            if ( cmd.equals(ConUt.BACKGROUND_DEFAULT) ) this.setBrushBackground("");
+            else this.setBrushBackground(cmd);
         }
         //
-        // !!! 2DO: need RESET analyse
-        
-        // !!! 2DO: need styles analyse
-        
+        if ( ConWinOutBrush.isStyleEscCommand(cmd) ) {
+            // update styles list
+            ConStyles styleToAdd = ConStyles.getByCmd(cmd);
+            if ( ConStyles.RESET == styleToAdd ) {
+                this.brushStyles.clear();
+                this.setBrushColor("");
+                this.setBrushBackground("");
+            }
+            else if ( ConStyles.NONE != styleToAdd ) {
+                // it is an empty (null) style
+                this.addBrushStyle(styleToAdd);
+            }
+        }
     }
     
     
