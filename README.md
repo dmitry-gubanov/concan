@@ -8,4 +8,5 @@ Include:
 3. Colors Console Control: system 16 colors, indexed 256 colors, and TrueColor 24 bits
 4. Support of 'Get Cursor Position'-escape sequence
 5. Console painter class
-6. Inner Benchmark Tester
+6. Independent self-sustain console windows with variety of options
+7. Inner Benchmark Tester
