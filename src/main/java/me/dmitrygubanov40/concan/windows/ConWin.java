@@ -33,9 +33,7 @@ public class ConWin
     // window default properties:
     private static final ConCord DEFAULT_WINDOW_POSITION;
     private static final ConWinBorder DEFAULT_WINDOW_BORDER;
-    private static final String DEFAULT_WINDOW_CAPTION;
-    // in case we need to cut off some piece of caption:
-    private static final String DEFAULT_WINDOW_CAPTION_CUT_SYMBOL;
+    private static final ConWinCaption DEFAULT_WINDOW_CAPTION;
     //
     private static final boolean DEFAULT_WINZONE_MULTITHREAD;
     private static final boolean DEFAULT_WINZONE_SCROLLABLE;
@@ -55,8 +53,7 @@ public class ConWin
         // (zero-size template)
         DEFAULT_WINDOW_BORDER = new ConWinBorder.Builder().build();
         //
-        DEFAULT_WINDOW_CAPTION = "";
-        DEFAULT_WINDOW_CAPTION_CUT_SYMBOL = "...";
+        DEFAULT_WINDOW_CAPTION = new ConWinCaption.Builder().build();
         //
         DEFAULT_WINZONE_MULTITHREAD = false;
         DEFAULT_WINZONE_SCROLLABLE = false;
@@ -83,7 +80,7 @@ public class ConWin
     private ConWinBorder border;
     
     // top window label
-    private String caption;
+    private ConWinCaption caption;
     
     ////////////////////////
     
@@ -143,9 +140,7 @@ public class ConWin
      * Redraw border if it is set and possible to draw.
      */
     private void refreshBorder() {
-        if ( this.border.canSeeBorder() ) {
-            this.border.drawBorder(this.position, this.width, this.height);
-        }
+        this.border.drawBorder(this.position, this.width, this.height);
     }
     
     
@@ -308,6 +303,16 @@ public class ConWin
     }
     
     /**
+     * Fill the padding area (if any).
+     * 'ConWinBorder' automatically fill only valid visual areas
+     * (including char-steps for possible border symbols).
+     */
+    private void refreshPadding() {
+        this.border.fillPadding(this.position, this.width, this.height,
+                                this.getZonePos(), this.getZoneWidth(), this.getZoneHeight());
+    }
+    
+    /**
      * Setter of multi-thread flag of window and its output.
      * @param setAsync the flag we install for multi-thread readiness
      */
@@ -321,6 +326,27 @@ public class ConWin
      */
     private void setScrollable(final boolean setScroll) {
         this.isScrollable = setScroll;
+    }
+    
+    /**
+     * Install caption for the window.
+     * @param setCaption new caption for the window
+     * @throws NullPointerException if there is no new caption
+     */
+    private void setCaption(final ConWinCaption setCaption) {
+        if ( null == setCaption ) {
+            String excMsg = "There is no window caption to install";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.caption = setCaption;
+    }
+    
+    /**
+     * Redraw window's caption if it is set and possible to print.
+     */
+    private void refreshCaption() {
+        this.caption.drawCaption();
     }
     
     
@@ -353,118 +379,6 @@ public class ConWin
         final String strDataNewLine = strData + "\n";
         //
         this.print(strDataNewLine);
-    }
-    
-    
-    
-    /**
-     * Setter for window's caption.
-     * @param setCaption new caption for the window
-     * @throws NullPointerException if there is no new caption
-     * @throws IllegalArgumentException if caption has a new line of some kind
-     */
-    private void setCaption(final String setCaption) {
-        if ( null == setCaption ) {
-            String excMsg = "There is no string for window's caption";
-            throw new NullPointerException(excMsg);
-        }
-        //
-        if ( setCaption.indexOf('\n') != -1
-                || setCaption.indexOf('\r') != -1 ) {
-            String excMsg = "Window's caption must be in single line";
-            throw new IllegalArgumentException(excMsg);
-        }
-        //
-        this.caption = setCaption;
-    }
-    
-    /**
-     * @return just this window current caption
-     */
-    private String getCaption() {
-        return this.caption;
-    }
-    
-    /**
-     * Analyze window state and the caption to generate text to place on the top of window.
-     * @return line to top of window
-     */
-    private String getCaptionToDraw() {
-        if ( this.getZoneWidth() >= this.getCaption().length() ) {
-            // caption "as-is" can be placed on the top of 
-            //
-            return this.getCaption();
-        }
-        //
-        final int diffLength = this.getCaption().length() - this.getZoneWidth();
-        final int cutLegnth = ConWin.DEFAULT_WINDOW_CAPTION_CUT_SYMBOL.length();
-        final int finalCutPos = this.getCaption().length() - diffLength - cutLegnth;
-        final String captionToDraw = this.getCaption().substring(0, finalCutPos)
-                                        + ConWin.DEFAULT_WINDOW_CAPTION_CUT_SYMBOL;
-        //
-        return captionToDraw;
-    }
-    
-    /**
-     * Analyze whether the window can visually have the caption.
-     * @return allowance to have the visual caption
-     */
-    private boolean canSeeCaption() {
-        boolean result = true;
-        //
-        if ( this.border.getTopWidth() <= 1 ) {
-            // no top border to insert label
-            result = false;
-        }
-        //
-        if ( this.getCaptionToDraw().length() <= 0 ) {
-            // where is no caption to draw
-            result = false;
-        }
-        //
-        if ( this.getCaptionToDraw().length() > this.getZoneWidth() ) {
-            // no space for even shortned caption
-            result = false;
-        }
-        //
-        return result;
-    }
-    
-    /**
-     * Draw text (one single line) at the top of window.
-     */
-    private void drawCaption() {
-        final String labelText = this.getCaptionToDraw();
-        final ConDrawFill labelFill = this.getTerminalFilling();
-        //
-        final int alignCenterShift = (labelText.length() < this.getZoneWidth() )
-                                    ? (int) ((this.getZoneWidth() - labelText.length()) / 2)
-                                    : 0;
-        //
-        final int xLabelCoord = this.getZonePos().getX() + alignCenterShift;
-        final int yLabelCoord = this.getZonePos().getY() - 1;
-        final ConCord labelPos = new ConCord(xLabelCoord, yLabelCoord);
-        //
-        ConDraw.label(labelPos, labelText, labelFill);
-    }
-    
-    /**
-     * Redraw window's caption if it is set and possible to print.
-     */
-    private void refreshCaption() {
-        if ( this.canSeeCaption() ) this.drawCaption();
-    }
-    
-    
-    
-    /**
-     * Fill the padding area (if any).
-     * 'ConWinBorder' automatically fill only valid visual areas
-     * (including char-steps for possible border symbols).
-     */
-    private void refreshPadding() {
-        this.border.fillPadding(this.position, this.width, this.height,
-                                this.getZonePos(), this.getZoneWidth(), this.getZoneHeight());
     }
     
     
@@ -560,7 +474,8 @@ public class ConWin
             //
             return this.pos(posCoord);
         }
-        // set of border initializator
+         
+        // set of border initializators:
         
         /**
          * Set border for the window  w/o extra padding of specific type and colors.
@@ -683,10 +598,8 @@ public class ConWin
             final int newRight = this.container.border.getRightWidth() + this.presetPaddingRight;
             final int newBottom = this.container.border.getBottomWidth() + this.presetPaddingBottom;
             //
-            ConWinBorder.Builder newBorderBuilder = new ConWinBorder.Builder();
-            newBorderBuilder
-                    .copy(this.container.border)
-                    .width(newLeft, newTop, newRight, newBottom);
+            ConWinBorder.Builder newBorderBuilder = new ConWinBorder.Builder(this.container.border);
+            newBorderBuilder.width(newLeft, newTop, newRight, newBottom);
             if ( null != this.presetPaddingFilling ) {
                 newBorderBuilder.paddingFill(this.presetPaddingFilling);
             }
@@ -855,6 +768,128 @@ public class ConWin
         }
         
         
+        // caption block: //
+        
+        /**
+         * Apply window-related parameters.
+         * At the moment all sizes and coordinates
+         * must be calculated already.
+         */
+        private void applyOutputZoneProperties() {
+            // saved all we installed earlier with 'copy':
+            ConWinCaption setFinalCaption = new ConWinCaption.Builder(this.container.caption)
+                            .length( this.container.getZoneWidth() )
+                            .height( this.container.border.getTopWidth() )
+                            .pos( this.container.getZonePos() )
+                            .build();
+            //
+            this.container.setCaption(setFinalCaption);
+        }
+        
+        /**
+         * Most "wide" creator with string and full object.
+         * @param setLabel text into the caption
+         * @param setFill 'brush' of all the area
+         * @return embedded builder for following methods
+         */
+        public Builder caption(final String setLabel, final ConDrawFill setFill) {
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .fill(setFill)
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        
+        /**
+         * Choose colors, but 'texture' painting will be off.
+         * @param setLabel
+         * @param fontColor
+         * @param bgColor
+         * @return embedded builder for following methods
+         */
+        public Builder caption(final String setLabel,
+                                final ConCol fontColor,
+                                final ConCol bgColor) {
+            ConDrawFill setFill = new ConDrawFill(bgColor, fontColor);
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .fill(setFill)
+                                            .nobrush()
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        // TrueColor version:
+        public Builder caption(final String setLabel,
+                                final Color fontColor,
+                                final Color bgColor) {
+            ConDrawFill setFill = new ConDrawFill(bgColor, fontColor);
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .fill(setFill)
+                                            .nobrush()
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        
+        /**
+         * Choose the font color, 'texture' painting will be off.
+         * @param setLabel
+         * @param fontColor
+         * @return embedded builder for following methods
+         */
+        public Builder caption(final String setLabel,
+                                final ConCol fontColor) {
+            final ConCol NO_BG_COLOR = null;
+            ConDrawFill setFill = new ConDrawFill(NO_BG_COLOR,
+                                                    fontColor);
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .fill(setFill)
+                                            .nobrush()
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        // TrueColor version:
+        public Builder caption(final String setLabel,
+                                final Color fontColor) {
+            final Color NO_BG_COLOR = null;
+            ConDrawFill setFill = new ConDrawFill(NO_BG_COLOR,
+                                                    fontColor);
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .fill(setFill)
+                                            .nobrush()
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        
+        /**
+         * Simple caption creation (only label text).
+         * Default ConWinCaption filling will be used.
+         * @param setLabel
+         * @return embedded builder for following methods
+         */
+        public Builder caption(final String setLabel) {
+            ConWinCaption setCaption = new ConWinCaption.Builder()
+                                            .label(setLabel)
+                                            .build();
+            this.container.setCaption(setCaption);
+            //
+            return this;
+        }
+        
+        // end of caption block //
+        
         
         /**
          * Checks the window status and finally creates it (as entity).
@@ -885,16 +920,21 @@ public class ConWin
             // (simple enlarging by 'presetPadding'-values)
             this.addPadding();
             //
-            // 4. check caption status:
+            // 4. Analise and calculate window storage size
+            this.calculateStorageLines();
+            //
+            // 5.Now install output area:
+            this.container.initWindow(this.presetLines);
+            //
+            // 6. check caption status:
             if ( null == this.container.caption ) {
                 this.container.setCaption(ConWin.DEFAULT_WINDOW_CAPTION);
             }
+            // Earlier window output zone was created.
+            // Now can calculate all necessary coordinates
+            // and apply them.
+            this.applyOutputZoneProperties();
             //
-            // 5. Analise and calculate window storage size
-            this.calculateStorageLines();
-            //
-            // Now need to install output area:
-            this.container.initWindow(this.presetLines);
             if ( showAfterCreation ) {
                 this.container.clearPlaceForWindow();
                 this.container.redrawFrame();
