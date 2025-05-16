@@ -93,9 +93,9 @@ class ConWinBorder
      * @param origBorder original set of filling parameters we will copy
      * @throws NullPointerException if there is no 'origBorder'
      */
-    private ConWinBorder(final ConWinBorder origBorder) {
+    private ConWinBorder(final ConWinBorder origBorder) throws NullPointerException {
         if ( null == origBorder ) {
-            String excMsg = "Where is no original border parameters to copy";
+            String excMsg = "Where is no original window border to copy";
             throw new NullPointerException(excMsg);
         }
         //
@@ -225,7 +225,7 @@ class ConWinBorder
      * 'NONE' type of border also blocks visual border.
      * @return 'true' when have enough space for drawing a border
      */
-    public boolean canSeeBorder() {
+    private boolean canSeeBorder() {
         boolean result = false;
         //
         if ( this.getLeftWidth() > 0 && this.getRightWidth() > 0
@@ -255,6 +255,8 @@ class ConWinBorder
             String excMsg = "Incorrect size to draw the border";
             throw new IllegalArgumentException(excMsg);
         }
+        //
+        if ( !this.canSeeBorder() ) return;// invisible border
         //
         final int left = pos.getX() + this.getLeftWidth();
         final int top = pos.getY() + this.getTopWidth();
@@ -305,6 +307,7 @@ class ConWinBorder
                                     ? ConWinBorder.VISUAL_NUMBER_OF_CHARS
                                     : 0;
         final ConDraw painter = new ConDraw();
+        painter.setTermSaveStatus(false);
         painter.setCurrentFill( this.getPaddingFilling() );
         //
         // when we should start not at the end of previous area, but in the next "zone"
@@ -392,6 +395,11 @@ class ConWinBorder
             this.container = new ConWinBorder();
         }
         
+        public Builder(final ConWinBorder initBorder) {
+            this();
+            this.copy(initBorder);// make the copy at once
+        }
+        
         //////////////////
         
         // sort of setters block
@@ -460,7 +468,7 @@ class ConWinBorder
          * @return embedded builder for following methods
          * @throws NullPointerException if nothing to copy
          */
-        public Builder copy(final ConWinBorder example) throws NullPointerException {
+        public final Builder copy(final ConWinBorder example) throws NullPointerException {
             if ( null == example ) {
                 String excMsg = "There is nothing to copy to border properties";
                 throw new NullPointerException(excMsg);
