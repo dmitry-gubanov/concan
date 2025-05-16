@@ -268,7 +268,10 @@ class ConWinBorder
         final ConCord borderRightBottom = new ConCord(right, bottom);
         final ConDrawFill borderFill = this.getFilling();
         //
-        ConDraw.border(this.getType(), borderLeftTop, borderRightBottom, borderFill);
+        ConDraw painter = new ConDraw(borderFill);
+        // paint the border without inner console status restoration
+        painter.setTermSaveStatus(false)
+                .drawBorderRect(this.getType(), borderLeftTop, borderRightBottom);
     }
     
     /**
