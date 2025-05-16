@@ -12,7 +12,8 @@ import me.dmitrygubanov40.concan.utility.Term;
 
 
 /**
- * Window in console with independent output zone, and border.
+ * Window in console with independent output zone,
+ * and border with caption.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
 public class ConWin
@@ -38,7 +39,6 @@ public class ConWin
     //
     private static final boolean DEFAULT_WINZONE_MULTITHREAD;
     private static final boolean DEFAULT_WINZONE_SCROLLABLE;
-    private static final int DEFAULT_WINZONE_STORAGE_PAGES;
     
     static {
         minPosOrderedPair = new ConCord(0, 0);
@@ -60,7 +60,6 @@ public class ConWin
         //
         DEFAULT_WINZONE_MULTITHREAD = false;
         DEFAULT_WINZONE_SCROLLABLE = false;
-        DEFAULT_WINZONE_STORAGE_PAGES = 100;
     }
     
     ////////////
@@ -474,9 +473,14 @@ public class ConWin
      * Public access re-drawer of border lines and the caption.
      */
     public void redrawFrame() {
+        Term.get().save();
+        //
+        // these methods do not save and restore console state:
         this.refreshPadding();
         this.refreshBorder();
         this.refreshCaption();
+        //
+        Term.get().restore();
     }
     
     
@@ -487,7 +491,7 @@ public class ConWin
     {
         
         // to know whether the user has change anything in storage
-        private static int INIT_ILLEGAL_STORAGE_SIZE;
+        private static final int INIT_ILLEGAL_STORAGE_SIZE;
         
         static {
             INIT_ILLEGAL_STORAGE_SIZE = -1;
