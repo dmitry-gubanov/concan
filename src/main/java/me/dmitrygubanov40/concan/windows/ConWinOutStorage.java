@@ -5,8 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import me.dmitrygubanov40.concan.buffer.OutputBufferString;
 
+
+import me.dmitrygubanov40.concan.buffer.OutputBufferString;
 import me.dmitrygubanov40.concan.utility.ConUt;
 
 
