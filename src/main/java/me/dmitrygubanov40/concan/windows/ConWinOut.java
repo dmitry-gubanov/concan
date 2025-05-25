@@ -140,7 +140,7 @@ class ConWinOut implements WinBufEventListener
         newZone.setClearZoneRegime(setClearState);
         if ( newZone.getClearZoneRegime() ) {
             // when created with 'clear' mode - clear the zone
-            newZone.clearZone();
+            newZone.initClearZone();
         }
         //
         return newZone;
@@ -758,9 +758,10 @@ class ConWinOut implements WinBufEventListener
      * Cover all the zone with the filling parameter.
      * Printed as overlay. Does not interact with the buffer.
      * @param filling how to fill the entire zone
+     * @param termRestStatus do we do save-restore commands?
      * @throws NullPointerException when filling parameters are empty
      */
-    private void fillZone(final ConDrawFill filling) {
+    private void fillZone(final ConDrawFill filling, final boolean termRestStatus) {
         if ( null == filling ) {
             String excMsg = "Filling parameters for the zone are null";
             throw new NullPointerException(excMsg);
@@ -774,16 +775,27 @@ class ConWinOut implements WinBufEventListener
         final ConCord rightBottom = this.zonePosition.plus(rightBottomCoordsToAdd);
         // 'ConDraw' saves and restore output styles itself
         ConDraw painter = new ConDraw(filling);
-        painter.setTermSaveStatus(false)
+        painter.setTermSaveStatus(termRestStatus)
                 .drawBar(leftTop, rightBottom);
     }
     
     /**
      * Cover all the zone with the the default colors and an empty char.
+     * Inner method during zone output (do not use Terminal restoration).
      */
     private void clearZone() {
+        final boolean TERM_RESTORATION = false;
         final ConDrawFill clearFill = new ConDrawFill();
-        this.fillZone(clearFill);
+        this.fillZone(clearFill, TERM_RESTORATION);
+    }
+    /**
+     * Cover all the zone with the the default colors and an empty char.
+     * Initialization function just in the constructor.
+     */
+    private void initClearZone() {
+        final boolean TERM_RESTORATION = this.getTermSaveStatus();
+        final ConDrawFill clearFill = new ConDrawFill();
+        this.fillZone(clearFill, TERM_RESTORATION);
     }
     
     
