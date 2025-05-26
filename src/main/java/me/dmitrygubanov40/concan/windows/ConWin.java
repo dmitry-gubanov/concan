@@ -7,6 +7,7 @@ import me.dmitrygubanov40.concan.paint.ConDraw;
 import me.dmitrygubanov40.concan.paint.ConDrawFill;
 import me.dmitrygubanov40.concan.utility.ConCol;
 import me.dmitrygubanov40.concan.utility.ConCord;
+import me.dmitrygubanov40.concan.utility.ConUt;
 import me.dmitrygubanov40.concan.utility.Term;
 
 
@@ -368,7 +369,7 @@ public class ConWin
             return;
         }
         //
-        this.zone.addToZone(strData);
+        this.zone.print(strData);
         this.zone.flush();
     }
     /**
@@ -376,7 +377,7 @@ public class ConWin
      * @param strData text line we send to output in window output zone with '\n'
      */
     public void println(final String strData) {
-        final String strDataNewLine = strData + "\n";
+        final String strDataNewLine = strData + ConUt.LF;
         //
         this.print(strDataNewLine);
     }
