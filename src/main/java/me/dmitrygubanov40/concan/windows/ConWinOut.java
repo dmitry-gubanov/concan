@@ -469,12 +469,11 @@ class ConWinOut implements WinBufEventListener
      * Call the zone to add this string to output zone.
      * @param str text line we will add to the zone
      */
-    public void addToZone(final String str) {
+    private void addToZone(final String str) {
         if ( null == str || str.length() <= 0 ) {
             // no empty strings
             return;
         }
-        //
         this.zoneBuf.addToWinBuf(str);
     }
     
@@ -485,6 +484,21 @@ class ConWinOut implements WinBufEventListener
         //
         this.zoneBuf.flush();
         //
+    }
+    
+    /**
+     * Add output from outter source.
+     * @param str text line we will add to the zone
+     */
+    public void print(final String str) {
+        if ( null == str || str.length() <= 0 ) {
+            // no empty strings
+            return;
+        }
+        //
+        final String strToAdd = this.parseLFs(str);
+        //
+        this.addToZone(strToAdd);
     }
     
     /**
@@ -500,7 +514,7 @@ class ConWinOut implements WinBufEventListener
      * @param height text area we want height
      * @throws IllegalArgumentException when requested to print out of zone borders
      */
-    public void printInZone(final String str,
+    public void stamp(final String str,
                                 final boolean clearBeforePrint,
                                 final ConCord coords,
                                 final int width,
@@ -539,9 +553,21 @@ class ConWinOut implements WinBufEventListener
         printZone.addToZone(str);
         printZone.flush();
     }
-    public void printInZone(final String str) {
+    public void stamp(final String str) {
         // text area w/o clearing in all the zone
-        this.printInZone(str, false, new ConCord(0, 0), this.zoneWidth, this.zoneHeight);
+        final boolean CLEAR_BEFORE_PRINT_STATUS = false;
+        final ConCord POSITION = new ConCord(0, 0);
+        this.stamp(str,
+                    CLEAR_BEFORE_PRINT_STATUS, POSITION,
+                    this.zoneWidth, this.zoneHeight);
+    }
+    public void stampClear(final String str) {
+        // text area w/o clearing in all the zone
+        final boolean CLEAR_BEFORE_PRINT_STATUS = true;
+        final ConCord POSITION = new ConCord(0, 0);
+        this.stamp(str,
+                    CLEAR_BEFORE_PRINT_STATUS, POSITION,
+                    this.zoneWidth, this.zoneHeight);
     }
     
     /**
@@ -829,6 +855,22 @@ class ConWinOut implements WinBufEventListener
         //
         // need 'flush' to recalculate buffer length and zone status
         buf.flush();
+    }
+    
+    
+    
+    /**
+     * If the last char is new line - replace with BS-LF-combo.
+     * Need for native autoscrolling.
+     * @param in input string value
+     * @return string with valid autoscrolling ending
+     */
+    private String parseLFs(final String in) {
+        if ( !in.endsWith(ConUt.LF) ) return in;
+        //
+        final String out = in.substring(0, in.length() - 1) + ConUt.BLF;
+        //
+        return out;
     }
     
     
