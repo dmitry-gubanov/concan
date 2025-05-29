@@ -15,7 +15,22 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
     </properties>
-
+    
+    <dependencies>
+		<dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.8.0</version>
+            <scope>test</scope>
+		</dependency>
+		<dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.8.0</version>
+            <scope>test</scope>
+		</dependency>
+    </dependencies>
+    
     <build>
         <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
             <plugins>
@@ -28,10 +43,6 @@
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.3.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.13.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -66,7 +77,12 @@
                     <artifactId>maven-project-info-reports-plugin</artifactId>
                     <version>3.6.1</version>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+    
 </project>
