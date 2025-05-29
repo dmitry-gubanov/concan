@@ -148,7 +148,7 @@ class ConWinOutStorageList<T>
                         throws ArrayIndexOutOfBoundsException {
         if ( chunkToDelete > this.size() ) {
             String excMsg = "Cannot delete " + chunkToDelete
-                        + "elements, list has only " + this.size() + " elements";
+                        + " elements, list has only " + this.size() + " elements";
             throw new ArrayIndexOutOfBoundsException(excMsg);
         }
         //
