@@ -30,7 +30,7 @@ class ConWinOutSpecChars
     private ConWinOutStorage curStorage;
     
     // such width is allowed to work (put characters) in the area
-    private int allowedWidth;
+    private final int allowedWidth;
     
     //
     
@@ -39,14 +39,9 @@ class ConWinOutSpecChars
      * @param initAllowedWidth X-axis border
      * @throws NullPointerException when does not get real coordinates
      */
-    public ConWinOutSpecChars(final ConCord initCurCursor, final int initAllowedWidth)
-                    throws NullPointerException {
-        if ( null == initCurCursor ) {
-            String excMsg = "Cursor coordinates are null (not initialized)";
-            throw new NullPointerException(excMsg);
-        }
-        //
-        this.curCursor = initCurCursor;
+    public ConWinOutSpecChars(final int initAllowedWidth)
+                                            throws NullPointerException {
+        this.curCursor = null;
         this.allowedWidth = initAllowedWidth;
         //
         this.curStorage = null;// need 'linkStorage()' to have storage pointer
@@ -67,6 +62,22 @@ class ConWinOutSpecChars
         this.curStorage = initCurStorage;
     }
     
+    /**
+     * We need actual cursor state before every operation.
+     * Update it manually via parameter.
+     * @param cursorToInstall
+     * @throws NullPointerException when cursor position was not given
+     */
+    private void updateCursor(final ConCord cursorToInstall)
+                                        throws NullPointerException {
+        if ( null == cursorToInstall ) {
+            String excMsg = "Console cursor position is not specified (is null)";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.curCursor = new ConCord(cursorToInstall);
+    }
+    
     //
     
     /**
@@ -74,9 +85,13 @@ class ConWinOutSpecChars
      * to set a new line.
      * LF (\n) analog, in coordinates.
      * Need the method to have the same code upper in ConCan-hierarchy.
+     * @param curCursor current cursor position
+     * @return new console coordinates position
      */
-    public void callNewLine() {
-        this.setNewLine();
+    public ConCord callNewLine(final ConCord curCursor) {
+        this.updateCursor(curCursor);
+        //
+        return this.setNewLine();
     }
     
     
@@ -84,11 +99,14 @@ class ConWinOutSpecChars
     /**
      * Move cursor on new line in the area.
      * Calculate coordinates, does not move cursor directly.
+     * Special case for new lines with direct return value 
+     * because of possible out calling ('callNewLine').
      * @param xToSet where cursor will appear via X-axis
+     * @return new console coordinates position
      * @throws NullPointerException when pointer to strings archive (storage) is absent
      * @see linkStorage()
      */
-    private void setNewLine(final int xToSet)
+    private ConCord setNewLine(final int xToSet)
                         throws NullPointerException {
         if ( null == this.curStorage ) {
             // strings archive is necessary but is absent
@@ -96,13 +114,15 @@ class ConWinOutSpecChars
             throw new NullPointerException(excMsg);
         }
         //
-        this.curCursor.setX(xToSet);
-        this.curCursor.setY(this.curCursor.getY() + 1);
+        final int yToSet = this.curCursor.getY() + 1;
+        this.curCursor = new ConCord(xToSet, yToSet);
         //
         this.curStorage.storeNewLine();// add new line in zone's data
+        //
+        return this.curCursor;
     }
-    private void setNewLine() {
-        this.setNewLine(0);
+    private ConCord setNewLine() {
+        return this.setNewLine(0);
     }
     
     /**
@@ -110,11 +130,12 @@ class ConWinOutSpecChars
      * @param backSteps how many symbols back we will step
      */
     private void goBackspace(final int backSteps) {
-        int curX = this.curCursor.getX();
+        final int curX = this.curCursor.getX();
         final int xToSet = ((curX - backSteps) > 0)
                                 ? (curX - backSteps)
                                 : 0;
-        this.curCursor.setX(xToSet);
+        final int yToSet = this.curCursor.getY();
+        this.curCursor = new ConCord(xToSet, yToSet);
     }
     private void goBackspace() {
         this.goBackspace(1);
@@ -139,7 +160,8 @@ class ConWinOutSpecChars
             }
         }
         //
-        this.curCursor.setX(newX);
+        final int oldY = this.curCursor.getY();
+        this.curCursor = new ConCord(newX, oldY);
     }
     
     /**
@@ -171,15 +193,20 @@ class ConWinOutSpecChars
     /**
      * Real console behavior imitator logic after special char entered.
      * @param cmdChar special character to analyze
+     * @param curCursor current cursor position
+     * @return new console coordinate position
      * @throws IllegalArgumentException it is not a 'char'
      */
-    public void process(final String cmdChar)
-                    throws IllegalArgumentException {
+    public ConCord process(final String cmdChar,
+                            final ConCord curCursor)
+                                throws IllegalArgumentException {
         if ( cmdChar.length() != 1 ) {
             String excMsg = "Incorrect length of special ASCII character: '"
                                 + cmdChar.length() + "'";
             throw new IllegalArgumentException(excMsg);
         }
+        //
+        this.updateCursor(curCursor);
         //
         // '\n':
         if ( cmdChar.equals(ConUt.LF) ) {
@@ -216,6 +243,8 @@ class ConWinOutSpecChars
             // to the begining of the line
             this.goLineStart();
         }
+        //
+        return this.curCursor;
     }
     
     
