@@ -9,7 +9,7 @@ package me.dmitrygubanov40.concan.utility;
  * First position is in the left top corner.
  * @author Dmitry Gubanov, dmitry.gubanov40@gmail.com
  */
-public class ConCord
+public final class ConCord
 {
     
     // permanent shift of coordinates to comply console position
@@ -120,6 +120,16 @@ public class ConCord
     
     
     /**
+     * Coordinates initialization.
+     * @param initX
+     * @param initY
+     */
+    public ConCord(final int initX, final int initY) {
+        this.X = initX;
+        this.Y = initY;
+    }
+    
+    /**
      * Simple initialization.
      */
     public ConCord() {
@@ -128,45 +138,21 @@ public class ConCord
     }
     
     /**
-     * Coordinates initialization.
-     * @param initX
-     * @param initY
+     * ConCord -> ConCord initialization.
+     * @param initCoord
+     * @throws NullPointerException when there are no coordinates
      */
-    public ConCord(final int initX, final int initY) {
-        this.setCord(initX, initY);
+    public ConCord(final ConCord initCoord) throws NullPointerException {
+        if ( null == initCoord ) {
+            String excMsg = "Coordinates were not given for initialization";
+            throw new NullPointerException(excMsg);
+        }
+        //
+        this.X = initCoord.getX();
+        this.Y = initCoord.getY();
     }
-    
     
     //////////
-    
-    
-    /**
-     * Install coordinates.
-     * @param newX
-     * @param newY 
-     */
-    public final void setCord(final int newX, final int newY) {
-        this.setX(newX);
-        this.setY(newY);
-    }
-    
-    /**
-     * Install X.
-     * @param newX
-     */
-    public void setX(final int newX) {
-        this.X = newX;
-    }
-    
-    /**
-     * Install Y.
-     * @param newY
-     */
-    public void setY(final int newY) {
-        this.Y = newY;
-    }
-    
-    
     
     /**
      * @return current X-coordinate
@@ -242,6 +228,35 @@ public class ConCord
         //
         String str = "(" + this.getX() + ", " + this.getY() + ")";
         return str;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if ( obj == this ) {
+            return true;
+        }
+        //
+        if ( null == obj || obj.getClass() != this.getClass() ) {
+            return false;
+        }
+        //
+        ConCord comp = (ConCord) obj;
+        if ( comp.getX() == this.getX()
+                && comp.getY() == this.getY() ) {
+            return true;
+        }
+        //
+        return false;
+    }
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int hash = 17;
+        hash = prime * hash + this.getX();
+        hash = prime * hash * this.getY();
+        //
+        return hash;
     }
     
     
