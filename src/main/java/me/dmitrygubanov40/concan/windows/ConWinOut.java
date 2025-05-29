@@ -99,7 +99,7 @@ class ConWinOut implements WinBufEventListener
         //
         this.isZoneToClear = true;
         //
-        this.specialCharProcessor = new ConWinOutSpecChars(this.zoneCursorPos, this.zoneWidth);
+        this.specialCharProcessor = new ConWinOutSpecChars(this.zoneWidth);
         //
         this.zoneBrush = new ConWinOutBrush();
         //
@@ -337,7 +337,7 @@ class ConWinOut implements WinBufEventListener
             //
             // new line via 'ConWinOutSpecChars':
             // move one line down, save the new line in 'storage'-archive.
-            this.specialCharProcessor.callNewLine();
+            this.zoneCursorPos = this.specialCharProcessor.callNewLine(this.zoneCursorPos);
             //
         }
     }
@@ -420,7 +420,9 @@ class ConWinOut implements WinBufEventListener
         final String outStr = event.getEventText();
         final int outputLength = event.getEventFlags();
         //
-        this.zoneCursorPos.setX(this.zoneCursorPos.getX() + outputLength);
+        final int newX = this.zoneCursorPos.getX() + outputLength;
+        final int oldY = this.zoneCursorPos.getY();
+        this.zoneCursorPos = new ConCord(newX, oldY);
         // keep text output for history after de-facto printing
         this.storage.saveOutput(outStr, this.zoneWidth);
     }
@@ -640,9 +642,8 @@ class ConWinOut implements WinBufEventListener
         //
         // take into account scrolled lines:
         final int yPosWoScrolled = curZonePos.getY() - this.zoneCursorScrolledDown;
-        curZonePos.setY(yPosWoScrolled);
         //
-        return curZonePos;
+        return new ConCord(curZonePos.getX(), yPosWoScrolled);
     }
     
     /**
@@ -704,7 +705,7 @@ class ConWinOut implements WinBufEventListener
             // cursor moved up - clear the space for new output
             if ( true == this.getClearZoneRegime() ) this.clearZone();
         }
-        this.zoneCursorPos.setCord(moveX, moveY);
+        this.zoneCursorPos = new ConCord(moveX, moveY);
         this.takeTerminalCursorPosition();// re-calculate cursor position
     }
     
@@ -846,7 +847,7 @@ class ConWinOut implements WinBufEventListener
         try {
             // "library" class to process the character
             // (re-calculate coordinates, append side effects)
-            specialCharProcessor.process(cmdChar);
+            this.zoneCursorPos = specialCharProcessor.process(cmdChar, this.zoneCursorPos);
         } catch ( RuntimeException charProcessExc ) {
             String excMsg = "Failed to procces special symbol. Reason: "
                                 + charProcessExc.getMessage();
